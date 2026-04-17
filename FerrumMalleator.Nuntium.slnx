@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/1-Core/">
+    <Project Path="src/FerrumMalleator.Nuntium/FerrumMalleator.Nuntium.csproj" Id="97e00ccb-9b72-42df-853d-b8e266f554bc" />
+  </Folder>
+  <Folder Name="/2-Persistence/">
+    <Project Path="src/FerrumMalleator.Nuntium.Persistence.EntityFramework/FerrumMalleator.Nuntium.Persistence.EntityFramework.csproj" Id="069941cc-7959-4e52-85c7-c2c8d1094a0e" />
+  </Folder>
+  <Folder Name="/3-Samples/">
+    <Project Path="samples/FerrumMalleator.Nuntium.Samples/FerrumMalleator.Nuntium.Samples.csproj" Id="9e292da1-5e76-4721-b52c-f23c812643d7" />
+  </Folder>
+  <Folder Name="/4-Tests/">
+    <Project Path="tests/FerrumMalleator.Nuntium.Tests/FerrumMalleator.Nuntium.Tests.csproj" Id="7d8df8ac-df04-48cf-840a-c26f4913a7ef" />
+  </Folder>
+</Solution>

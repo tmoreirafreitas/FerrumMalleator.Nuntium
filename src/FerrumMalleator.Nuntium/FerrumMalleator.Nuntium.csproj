@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>FerrumMalleator.Nuntium</PackageId>
+		<Version>0.1.0</Version>
+		<Authors>Thiago Gabriel Moreira Freitas</Authors>
+		<Company>FerrumMalleator</Company>
+		<Description>Lightweight messaging framework with Saga, Outbox, Retry and DLQ.</Description>
+		<PackageTags>messaging kafka saga outbox cqrs</PackageTags>
+		<RepositoryUrl>https://github.com/tmoreirafreitas/FerrumMalleator.Nuntium</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Confluent.Kafka" Version="2.14.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
+		<PackageReference Include="System.Text.Json" Version="10.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="FerrumMalleator.Nuntium.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>

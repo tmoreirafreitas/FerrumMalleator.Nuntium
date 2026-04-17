@@ -1,0 +1,21 @@
+﻿using FerrumMalleator.Nuntium.Persistence.EntityFramework.Context;
+using FerrumMalleator.Nuntium.Samples.Saga.States;
+using Microsoft.EntityFrameworkCore;
+
+namespace FerrumMalleator.Nuntium.Samples.Persistence.Context
+{
+    internal class SamplesDbContext(DbContextOptions options) : NuntiumDbContext(options)
+    {
+        public DbSet<PedidoSagaState> PedidoSagas { get; set; }
+        protected override void OnConfigureNuntium(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<PedidoSagaState>(e =>
+            {
+                e.HasKey(x => x.CorrelationId);
+                e.Property(x => x.CorrelationId).ValueGeneratedNever();
+                e.Property(x => x.PedidoCriado).IsRequired();
+                e.Property(x => x.PagamentoAprovado).IsRequired();
+            });
+        }
+    }
+}
