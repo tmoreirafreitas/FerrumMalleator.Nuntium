@@ -7,13 +7,13 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
     {
         private readonly List<DeadLetterMessage> _messages = [];
 
-        public Task AddAsync(DeadLetterMessage message, CancellationToken ct)
+        public Task AddAsync(DeadLetterMessage message, CancellationToken cancellation)
         {
             _messages.Add(message);
             return Task.CompletedTask;
         }
 
-        public async Task<IReadOnlyList<DeadLetterMessage>> GetPendingAsync(int take, CancellationToken ct)
+        public async Task<IReadOnlyList<DeadLetterMessage>> GetPendingAsync(int take, CancellationToken cancellation)
         {
             var result = _messages
                 .Where(x => !x.Reprocessed)
@@ -22,7 +22,7 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
             return await Task.FromResult(result.ToList());
         }
 
-        public Task MarkReprocessedAsync(Guid messageId, CancellationToken ct)
+        public Task MarkReprocessedAsync(Guid messageId, CancellationToken cancellation)
         {
             var msg = _messages.FirstOrDefault(x => x.MessageId == messageId);
             if (msg != null)

@@ -9,25 +9,25 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
     {
         private readonly NuntiumDbContext _db = db;
 
-        public async Task<bool> HasProcessedAsync(Guid messageId, CancellationToken ct = default)
+        public async Task<bool> HasProcessedAsync(Guid messageId, CancellationToken cancellation = default)
         {
             return await _db.Set<ProcessedMessage>()
                 .AnyAsync(
                     x => x.MessageId == messageId,
-                    ct);
+                    cancellation);
         }
 
-        public async Task MarkProcessedAsync(Guid messageId, CancellationToken ct = default)
+        public async Task MarkProcessedAsync(Guid messageId, CancellationToken cancellation = default)
         {
             try
             {
                 _db.Add(new ProcessedMessage(messageId));
 
-                await _db.SaveChangesAsync(ct);
+                await _db.SaveChangesAsync(cancellation);
             }
             catch (DbUpdateException)
             {
-                // Inserção concorrente / duplicada.
+                
             }
         }
     }

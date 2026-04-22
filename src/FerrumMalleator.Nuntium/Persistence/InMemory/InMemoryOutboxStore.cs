@@ -8,13 +8,13 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
     {
         private readonly ConcurrentBag<OutboxMessage> _messages = [];
 
-        public Task AddAsync(OutboxMessage message, CancellationToken ct)
+        public Task AddAsync(OutboxMessage message, CancellationToken cancellation)
         {
             _messages.Add(message);
             return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int take, CancellationToken ct)
+        public Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int take, CancellationToken cancellation)
         {
             var result = _messages
                     .Where(x => x.ProcessedOn == null)
@@ -23,14 +23,14 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
             return Task.FromResult((IReadOnlyList<OutboxMessage>)result);
         }
 
-        public Task MarkProcessedAsync(Guid id, CancellationToken ct)
+        public Task MarkProcessedAsync(Guid id, CancellationToken cancellation)
         {
             var msg = _messages.First(x => x.Id == id);
             msg.ProcessedOn = DateTime.UtcNow;
             return Task.CompletedTask;
         }
 
-        public Task MarkFailedAsync(Guid id, string error, CancellationToken ct)
+        public Task MarkFailedAsync(Guid id, string error, CancellationToken cancellation)
         {
             var msg = _messages.First(x => x.Id == id);
             msg.Error = error;

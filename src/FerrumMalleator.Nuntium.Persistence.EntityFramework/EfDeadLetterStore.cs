@@ -9,13 +9,13 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
     {
         private readonly NuntiumDbContext _db = db;
 
-        public async Task AddAsync(DeadLetterMessage message, CancellationToken ct)
+        public async Task AddAsync(DeadLetterMessage message, CancellationToken cancellation)
         {
             _db.Set<DeadLetterMessage>().Add(message);
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(cancellation);
         }
 
-        public async Task<IReadOnlyList<DeadLetterMessage>> GetPendingAsync(int take, CancellationToken ct)
+        public async Task<IReadOnlyList<DeadLetterMessage>> GetPendingAsync(int take, CancellationToken cancellation)
         {
             var now = DateTime.UtcNow;
 
@@ -25,26 +25,26 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                     (x.NextRetryAt == null || x.NextRetryAt <= now))
                 .OrderBy(x => x.FailedAt)
                 .Take(take)
-                .ToListAsync(ct);
+                .ToListAsync(cancellation);
 
             return messages;
         }
 
-        public async Task MarkReprocessedAsync(Guid messageId, CancellationToken ct)
+        public async Task MarkReprocessedAsync(Guid messageId, CancellationToken cancellation)
         {
-            var entity = await _db.Set<DeadLetterMessage>().FirstOrDefaultAsync(x => x.MessageId == messageId, ct);
+            var entity = await _db.Set<DeadLetterMessage>().FirstOrDefaultAsync(x => x.MessageId == messageId, cancellation);
 
             if (entity is null)
                 return;
 
             entity.Reprocessed = true;
 
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(cancellation);
         }
 
-        public async Task UpdateRetryAsync(Guid messageId, int reprocessCount, DateTime nextRetryAt, CancellationToken ct)
+        public async Task UpdateRetryAsync(Guid messageId, int reprocessCount, DateTime nextRetryAt, CancellationToken cancellation)
         {
-            var entity = await _db.Set<DeadLetterMessage>().FirstOrDefaultAsync(x => x.MessageId == messageId, ct);
+            var entity = await _db.Set<DeadLetterMessage>().FirstOrDefaultAsync(x => x.MessageId == messageId, cancellation);
 
             if (entity is null)
                 return;
@@ -52,7 +52,7 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
             entity.ReprocessCount = reprocessCount;
             entity.NextRetryAt = nextRetryAt;
 
-            await _db.SaveChangesAsync(ct);
+            await _db.SaveChangesAsync(cancellation);
         }
     }
 }
