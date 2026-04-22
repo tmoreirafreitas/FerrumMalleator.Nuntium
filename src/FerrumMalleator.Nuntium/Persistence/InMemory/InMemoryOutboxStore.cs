@@ -1,0 +1,40 @@
+﻿using FerrumMalleator.Nuntium.Abstractions.Persistence;
+using FerrumMalleator.Nuntium.Outbox;
+using System.Collections.Concurrent;
+
+namespace FerrumMalleator.Nuntium.Persistence.InMemory
+{
+    internal sealed class InMemoryOutboxStore : IOutboxStore
+    {
+        private readonly ConcurrentBag<OutboxMessage> _messages = [];
+
+        public Task AddAsync(OutboxMessage message, CancellationToken ct)
+        {
+            _messages.Add(message);
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int take, CancellationToken ct)
+        {
+            var result = _messages
+                    .Where(x => x.ProcessedOn == null)
+                    .Take(take).ToList().AsReadOnly();
+
+            return Task.FromResult((IReadOnlyList<OutboxMessage>)result);
+        }
+
+        public Task MarkProcessedAsync(Guid id, CancellationToken ct)
+        {
+            var msg = _messages.First(x => x.Id == id);
+            msg.ProcessedOn = DateTime.UtcNow;
+            return Task.CompletedTask;
+        }
+
+        public Task MarkFailedAsync(Guid id, string error, CancellationToken ct)
+        {
+            var msg = _messages.First(x => x.Id == id);
+            msg.Error = error;
+            return Task.CompletedTask;
+        }
+    }
+}
