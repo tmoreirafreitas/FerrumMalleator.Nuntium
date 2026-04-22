@@ -183,6 +183,33 @@ public class PedidoSaga :
 
 ---
 
+## 🧱 Produção com Entity Framework
+
+Para ambientes de produção, utilize persistência com Entity Framework:
+
+```csharp
+builder.Services.AddNuntium(bus =>
+{
+    bus.UseKafka(opt =>
+    {
+        opt.BootstrapServers = "localhost:9092";
+    })
+    .UsePersistence<SampleDbContext>(opt =>
+    {
+        opt.UseInMemoryDatabase("nuntium"); // ou UseSqlServer / UseNpgsql
+    })
+    .UseOutbox()
+    .UseRetry(r =>
+    {
+        r.MaxAttempts = 3;
+    })
+    .AddSaga()
+    .WithTopic<PedidoCriado>("pedido.criado", "pedido-group")
+    .AddConsumer<PedidoCriadoConsumer, PedidoCriado>();
+});
+```
+---
+
 ## 🔄 Arquitetura
 
 ```text
@@ -231,6 +258,7 @@ Se você já usa MediatR, você já sabe usar Nuntium.
 
 * [ ] Observabilidade completa
 * [ ] Suporte a RabbitMQ
+* [ ] Registro automático de consumers via assembly scanning (opcional)
 
 ---
 

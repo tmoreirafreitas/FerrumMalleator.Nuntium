@@ -1,7 +1,6 @@
 using Confluent.Kafka;
 using FerrumMalleator.Nuntium.Builders;
 using FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders;
-using FerrumMalleator.Nuntium.Persistence.EntityFramework.Context;
 using FerrumMalleator.Nuntium.Samples;
 using FerrumMalleator.Nuntium.Samples.Consumers;
 using FerrumMalleator.Nuntium.Samples.Messages;
@@ -33,12 +32,7 @@ builder.Services.AddNuntium(bus =>
     .UseRetry(cf =>
     {
         cf.MaxAttempts = 4;
-        cf.Delays = [
-            TimeSpan.FromSeconds(5),
-                TimeSpan.FromSeconds(10),
-                TimeSpan.FromSeconds(20),
-                TimeSpan.FromSeconds(40)
-        ];
+        cf.Delays = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(40)];
     })
     .UseOutbox()
     .AddSaga()
@@ -54,7 +48,6 @@ builder.Services.AddNuntium(bus =>
 });
 
 builder.Services.AddHostedService<SamplePublisherWorker>();
-//builder.Services.AddHostedService<OutBoxServiceWorker>();
 
 var host = builder.Build();
 
