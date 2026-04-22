@@ -11,7 +11,7 @@ namespace FerrumMalleator.Nuntium.Outbox
         private readonly IOutboxStore _outboxStore = outboxStore;
         private readonly MessageMetadataRegistry _messageTypeRegistry = messageTypeRegistry;
 
-        public async Task PublishAsync<T>(T message, CancellationToken ct = default) where T : class
+        public async Task PublishAsync<T>(T message, CancellationToken ct = default)
         {
             var messageType = _messageTypeRegistry.Get<T>();
             var envelope = new MessageEnvelope<T>

@@ -33,11 +33,14 @@ namespace FerrumMalleator.Nuntium.Dispatching
                 ?? throw new InvalidOperationException();
 
             var payloadProperty = envelopeType.GetProperty("Payload")!;
-            var payloadElement = (JsonElement)payloadProperty.GetValue(envelope)!;
+            var rawPayload = payloadProperty.GetValue(envelope)!;
 
-            var payload = payloadElement.Deserialize(
-                messageType,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+            object payload = rawPayload is JsonElement jsonElement
+                ? jsonElement.Deserialize(messageType, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                })!
+                : rawPayload;
 
             var retry = _provider.GetRequiredService<IRetryExecutor>();
             var transport = _provider.GetRequiredService<IMessageTransport>();

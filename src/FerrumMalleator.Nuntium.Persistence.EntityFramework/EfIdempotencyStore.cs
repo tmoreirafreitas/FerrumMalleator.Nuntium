@@ -17,17 +17,20 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                     cancellation);
         }
 
-        public async Task MarkProcessedAsync(Guid messageId, CancellationToken cancellation = default)
+        public async Task MarkProcessedAsync(Guid messageId, CancellationToken ct = default)
         {
             try
             {
-                _db.Add(new ProcessedMessage(messageId));
+                if (await _db.Set<ProcessedMessage>().AnyAsync(x => x.MessageId == messageId, ct))
+                    return;
 
-                await _db.SaveChangesAsync(cancellation);
+                _db.Add(new ProcessedMessage(messageId));
+                await _db.SaveChangesAsync(ct);
             }
             catch (DbUpdateException)
             {
-                
+                // fallback para condição de corrida (concorrência)
+                // idempotência garantida
             }
         }
     }

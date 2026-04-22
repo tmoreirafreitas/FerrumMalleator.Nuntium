@@ -2,7 +2,7 @@
 
 namespace FerrumMalleator.Nuntium.Sagas.Handlers
 {
-    public interface ISagaHandler<TMessage, TState> where TState : class, ISagaState
+    public interface ISagaHandler<in TMessage, in TState> where TState : ISagaState
     {
         Task Handle(TMessage message, TState state, CancellationToken stoppingToken);
     }

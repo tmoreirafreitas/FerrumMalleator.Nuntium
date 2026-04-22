@@ -17,14 +17,13 @@ namespace FerrumMalleator.Nuntium.Builders
 
         public NuntiumBusBuilder AddConsumer<TConsumer, TMessage>()
             where TConsumer : class, IMessageConsumer<TMessage>
-            where TMessage : class
         {
             Consumers.Add((typeof(TConsumer), typeof(IMessageConsumer<TMessage>)));
             ConsumerInvokerRegistry.Register<TMessage>();
             return this;
         }
 
-        public NuntiumBusBuilder WithTopic<TMessage>(string topic, string groupId, Func<TMessage, string>? partitionKey = null) where TMessage : class
+        public NuntiumBusBuilder WithTopic<TMessage>(string topic, string groupId, Func<TMessage, string>? partitionKey = null)
         {
             Registry.Register<TMessage>(topic, groupId, partitionKey is null ? null : msg => partitionKey((TMessage)msg));
 

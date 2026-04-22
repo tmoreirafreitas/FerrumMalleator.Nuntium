@@ -20,7 +20,9 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                 .AnyAsync(x => x.CorrelationId == state.CorrelationId, cancellation);
 
             if (exists)
+            {
                 _db.Update(state);
+            }
             else
             {
                 try
@@ -29,7 +31,8 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                 }
                 catch (DbUpdateException)
                 {
-                    throw;
+                    // concorrência: outro processo inseriu antes
+                    _db.Update(state);
                 }
             }
 
