@@ -2,7 +2,7 @@
 {
     public interface IIdempotencyStore
     {
-        Task<bool> HasProcessedAsync(Guid messageId, CancellationToken cancellationToken = default);
-        Task MarkProcessedAsync(Guid messageId, CancellationToken cancellationToken = default);
+        Task<bool> HasProcessedAsync(Guid messageId, CancellationToken ct = default);
+        Task MarkProcessedAsync(Guid messageId, CancellationToken ct = default);
     }
 }

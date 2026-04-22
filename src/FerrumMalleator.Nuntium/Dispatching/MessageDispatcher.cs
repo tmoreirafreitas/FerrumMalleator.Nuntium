@@ -19,7 +19,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
         private readonly MessageMetadataRegistry _messageTypeRegistry = messageTypeRegistry;
         private readonly ConsumerInvokerRegistry _consumerInvokerRegistry = consumerInvokerRegistry;
 
-        public async Task DispatchAsync(string json, CancellationToken cancellationToken)
+        public async Task DispatchAsync(string json, CancellationToken ct)
         {
             var meta = JsonSerializer.Deserialize<BaseEnvelope>(json)
                 ?? throw new InvalidOperationException();
@@ -52,7 +52,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
                             messageType,
                             _provider,
                             payload,
-                            cancellationToken);
+                            ct);
                     }
 
                     if (_sagaRegistry != null && _sagaRegistry.Contains(messageType))
@@ -63,7 +63,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
                             (IMessageEnvelope)envelope,
                             messageType,
                             payload,
-                            cancellationToken);
+                            ct);
                     }
                 },
                 async (ex, retryCount) =>
@@ -91,7 +91,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
 
                     var dlqJson = JsonSerializer.Serialize(dlqEnvelope);
 
-                    await transport.SendAsync(dlqMetadata.Key, dlqJson, cancellationToken);
+                    await transport.SendAsync(dlqMetadata.Key, dlqJson, ct);
                 });
         }
     }

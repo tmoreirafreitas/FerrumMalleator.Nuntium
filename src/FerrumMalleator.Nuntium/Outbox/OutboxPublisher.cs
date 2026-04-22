@@ -11,7 +11,7 @@ namespace FerrumMalleator.Nuntium.Outbox
         private readonly IOutboxStore _outboxStore = outboxStore;
         private readonly MessageMetadataRegistry _messageTypeRegistry = messageTypeRegistry;
 
-        public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default)
+        public async Task PublishAsync<T>(T message, CancellationToken ct = default) where T : class
         {
             var messageType = _messageTypeRegistry.Get<T>();
             var envelope = new MessageEnvelope<T>
@@ -29,7 +29,7 @@ namespace FerrumMalleator.Nuntium.Outbox
                 OccurredOn = envelope.OccurredOn
             };
 
-            await _outboxStore.AddAsync(outbox, cancellationToken);
+            await _outboxStore.AddAsync(outbox, ct);
         }
     }
 }

@@ -2,6 +2,6 @@
 {
     public interface IMessageConsumer<T>
     {
-        Task ConsumeAsync(T message, CancellationToken stoppingToken);
+        Task ConsumeAsync(T message, CancellationToken ct);
     }
 }

@@ -9,15 +9,15 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
     {
         private readonly NuntiumDbContext _db = db;
 
-        public async Task<T> GetAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        public async Task<T> GetAsync(Guid correlationId, CancellationToken ct = default)
         {
-            return (await _db.Set<T>().FindAsync([correlationId, cancellationToken], cancellationToken: cancellationToken))!;
+            return (await _db.Set<T>().FindAsync([correlationId, ct], ct))!;
         }
 
-        public async Task SaveAsync(T state, CancellationToken cancellationToken = default)
+        public async Task SaveAsync(T state, CancellationToken ct = default)
         {
             var exists = await _db.Set<T>()
-                .AnyAsync(x => x.CorrelationId == state.CorrelationId, cancellationToken);
+                .AnyAsync(x => x.CorrelationId == state.CorrelationId, ct);
 
             if (exists)
                 _db.Update(state);
@@ -25,7 +25,7 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
             {
                 try
                 {
-                    await _db.AddAsync(state, cancellationToken);
+                    await _db.AddAsync(state, ct);
                 }
                 catch (DbUpdateException)
                 {
@@ -33,7 +33,7 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                 }
             }
 
-            await _db.SaveChangesAsync(cancellationToken);
+            await _db.SaveChangesAsync(ct);
         }
     }
 }
