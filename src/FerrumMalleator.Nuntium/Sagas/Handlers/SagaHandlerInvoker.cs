@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FerrumMalleator.Nuntium.Sagas.Handlers
 {
-    internal sealed class SagaHandlerInvoker<TMessage, TState> : ISagaHandlerInvoker where TState : class, ISagaState
+    internal sealed class SagaHandlerInvoker<TMessage, TState> : ISagaHandlerInvoker where TState : ISagaState
     {
         public async Task Invoke(object message, object state, IServiceProvider provider, CancellationToken ct)
         {

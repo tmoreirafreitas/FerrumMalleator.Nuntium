@@ -8,9 +8,7 @@ namespace FerrumMalleator.Nuntium.Sagas.Handlers
     {
         private readonly Dictionary<Type, SagaHandlerDescriptor> _descriptors = [];
 
-        public void Register<TMessage, TState>()
-            where TMessage : class
-            where TState : class, ISagaState
+        public void Register<TMessage, TState>() where TState : ISagaState
         {
             _descriptors[typeof(TMessage)] = new SagaHandlerDescriptor
             {

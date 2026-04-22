@@ -1,8 +1,8 @@
 ﻿namespace FerrumMalleator.Nuntium.Messaging.Envelopes
 {
-    public class MessageEnvelope<T> : BaseEnvelope, IMessageEnvelope 
-        where T : class
+    public class MessageEnvelope<T> : BaseEnvelope, IMessageEnvelope
     {
-        public object Payload { get; set; } = default!;
+        public T Payload { get; set; } = default!;
+        object IMessageEnvelope.Payload => Payload!;
     }
 }
