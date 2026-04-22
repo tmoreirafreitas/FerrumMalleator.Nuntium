@@ -14,25 +14,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-
-      - name: Install Sonar Scanner
-        run: dotnet tool install --global dotnet-sonarscanner
-
-      - name: Sonar Begin
-        run: |
-          dotnet sonarscanner begin \
-            /k:"ferrummalleator" \
-            /o:"ferrummalleator" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/samples/**,**/examples/**,**/.github/**" \
-            /d:sonar.coverage.exclusions="**/*Tests*.cs,**/tests/**"
 
       - name: Restore
         run: dotnet restore
@@ -43,5 +29,7 @@ jobs:
       - name: Test + Coverage
         run: dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
 
-      - name: Sonar End
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
