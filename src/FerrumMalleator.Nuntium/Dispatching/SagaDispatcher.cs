@@ -5,28 +5,35 @@ using FerrumMalleator.Nuntium.Builders;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
 using FerrumMalleator.Nuntium.Messaging.Models;
 using FerrumMalleator.Nuntium.Sagas.Handlers;
-using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 
 namespace FerrumMalleator.Nuntium.Dispatching
 {
-    internal sealed class SagaDispatcher(IServiceProvider provider, SagaHandlerRegistry registry, IIdempotencyStore idempotency, IRetryExecutor retryExecutor)
+    internal sealed class SagaDispatcher(
+        IServiceProvider provider,
+        SagaHandlerRegistry sagaHandlerRegistry,
+        IIdempotencyStore idempotency,
+        IRetryExecutor retryExecutor,
+        IMessageTransport messageTransport,
+        MessageMetadataRegistry messageMetadataRegistry)
     {
         private readonly IServiceProvider _provider = provider;
-        private readonly SagaHandlerRegistry _registry = registry;
+        private readonly IMessageTransport _messageTransport = messageTransport;
+        private readonly MessageMetadataRegistry _messageMetadataRegistry = messageMetadataRegistry;
+        private readonly SagaHandlerRegistry _sagaHandlerRegistry = sagaHandlerRegistry;
         private readonly IIdempotencyStore _idempotency = idempotency ?? throw new ArgumentNullException(nameof(idempotency));
         private readonly IRetryExecutor _retryExecutor = retryExecutor;
 
-        public async Task DispatchAsync(IMessageEnvelope envelope, Type messageType, object payload, CancellationToken cancellationToken)
+        public async Task DispatchAsync(IMessageEnvelope envelope, Type messageType, object payload, CancellationToken ct)
         {
-            if (await _idempotency.HasProcessedAsync(envelope.MessageId, cancellationToken))
+            if (await _idempotency.HasProcessedAsync(envelope.MessageId, ct))
                 return;
 
-            var descriptor = _registry.Get(messageType);
+            var descriptor = _sagaHandlerRegistry.Get(messageType);
 
             var correlationId = ResolveCorrelationId(payload, messageType);
 
-            var state = await descriptor.LoadState(_provider, correlationId.ToString()!, cancellationToken);
+            var state = await descriptor.LoadState(_provider, correlationId.ToString()!, ct);
 
             if (state == null)
             {
@@ -37,9 +44,6 @@ namespace FerrumMalleator.Nuntium.Dispatching
                     .SetValue(state, correlationId);
             }
 
-            var transport = _provider.GetRequiredService<IMessageTransport>();
-            var registry = _provider.GetRequiredService<MessageMetadataRegistry>();
-
             await _retryExecutor.ExecuteAsync(
                 async () =>
                 {
@@ -47,7 +51,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
                         payload,
                         state!,
                         _provider,
-                        cancellationToken);
+                        ct);
                 },
                 async (ex, retryCount) =>
                 {
@@ -62,7 +66,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
                         FailedAt = DateTime.UtcNow
                     };
 
-                    var metadata = registry.Get<DeadLetterMessage>();
+                    var metadata = _messageMetadataRegistry.Get<DeadLetterMessage>();
 
                     var dlqEnvelope = new MessageEnvelope<DeadLetterMessage>
                     {
@@ -73,16 +77,16 @@ namespace FerrumMalleator.Nuntium.Dispatching
 
                     var json = JsonSerializer.Serialize(dlqEnvelope);
 
-                    await transport.SendAsync(metadata.Key, json, cancellationToken);
+                    await _messageTransport.SendAsync(metadata.Key, json, ct);
                 });
 
-            await descriptor.SaveState(_provider, state!, cancellationToken);
+            await descriptor.SaveState(_provider, state!, ct);
 
-            await _idempotency.MarkProcessedAsync(envelope.MessageId, cancellationToken);
+            await _idempotency.MarkProcessedAsync(envelope.MessageId, ct);
         }
 
         private object ResolveCorrelationId(object message, Type messageType)
-        {            
+        {
             var customResolverType = typeof(ISagaCorrelation<>).MakeGenericType(messageType);
 
             var customResolver = _provider.GetService(customResolverType);

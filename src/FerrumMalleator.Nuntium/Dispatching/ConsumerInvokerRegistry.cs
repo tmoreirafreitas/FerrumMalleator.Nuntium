@@ -10,20 +10,20 @@ namespace FerrumMalleator.Nuntium.Dispatching
         public void Register<TMessage>()
         {
             _invokers[typeof(TMessage)] =
-                async (provider, payload, cancellationToken) =>
+                async (provider, payload, ct) =>
                 {
                     var consumers = provider.GetServices<IMessageConsumer<TMessage>>();
 
                     foreach (var consumer in consumers)
                     {
-                        await consumer.ConsumeAsync((TMessage)payload, cancellationToken).ConfigureAwait(false);
+                        await consumer.ConsumeAsync((TMessage)payload, ct).ConfigureAwait(false);
                     }
                 };
         }
 
-        public Task Invoke(Type type, IServiceProvider provider, object payload, CancellationToken cancellationToken)
+        public Task Invoke(Type type, IServiceProvider provider, object payload, CancellationToken ct)
         {
-            return _invokers[type](provider, payload, cancellationToken);
+            return _invokers[type](provider, payload, ct);
         }
 
         public bool HasHandler(Type type)

@@ -7,13 +7,13 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
     {
         private readonly Dictionary<Guid, T> _store = [];
 
-        public Task<T> GetAsync(Guid correlationId, CancellationToken cancellationToken = default)
+        public Task<T> GetAsync(Guid correlationId, CancellationToken ct = default)
         {
             _store.TryGetValue(correlationId, out var state);
             return Task.FromResult(state)!;
         }
 
-        public Task SaveAsync(T state, CancellationToken cancellationToken = default)
+        public Task SaveAsync(T state, CancellationToken ct = default)
         {
             _store[state.CorrelationId] = state;
             return Task.CompletedTask;

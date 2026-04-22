@@ -2,7 +2,7 @@
 {
     public interface ISagaRepository<TState> where TState : class, ISagaState
     {
-        Task<TState> GetAsync(Guid correlationId, CancellationToken cancellationToken = default);
-        Task SaveAsync(TState state, CancellationToken cancellationToken = default);
+        Task<TState> GetAsync(Guid correlationId, CancellationToken ct = default);
+        Task SaveAsync(TState state, CancellationToken ct = default);
     }
 }

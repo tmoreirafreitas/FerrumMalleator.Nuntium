@@ -8,13 +8,13 @@ namespace FerrumMalleator.Nuntium.Transport.InMemory
     {
         private readonly IServiceProvider _provider = provider;
 
-        public async Task SendAsync(string messageType, string payload, CancellationToken cancellationToken)
+        public async Task SendAsync(string messageType, string payload, CancellationToken ct)
         {
             using var scope = _provider.CreateScope();
 
             var dispatcher = scope.ServiceProvider.GetRequiredService<MessageDispatcher>();
 
-            await dispatcher.DispatchAsync(payload, cancellationToken);
+            await dispatcher.DispatchAsync(payload, ct);
         }
     }
 }

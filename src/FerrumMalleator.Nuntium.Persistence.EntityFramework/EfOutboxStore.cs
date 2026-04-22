@@ -9,32 +9,32 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
     {
         private readonly NuntiumDbContext _db = db;
 
-        public async Task AddAsync(OutboxMessage message, CancellationToken cancellationToken)
+        public async Task AddAsync(OutboxMessage message, CancellationToken ct)
         {
             _db.Set<OutboxMessage>().Add(message);
-            await _db.SaveChangesAsync(cancellationToken);
+            await _db.SaveChangesAsync(ct);
         }
 
-        public async Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int take, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<OutboxMessage>> GetPendingAsync(int take, CancellationToken ct)
         {
             return await _db.Set<OutboxMessage>()
                 .Where(x => x.ProcessedOn == null)
                 .Take(take)
-                .ToListAsync(cancellationToken: cancellationToken);
+                .ToListAsync(ct);
         }
 
-        public async Task MarkProcessedAsync(Guid id, CancellationToken cancellationToken)
+        public async Task MarkProcessedAsync(Guid id, CancellationToken ct)
         {
-            var msg = await _db.Set<OutboxMessage>().FindAsync([id], cancellationToken);
+            var msg = await _db.Set<OutboxMessage>().FindAsync([id], ct);
             msg!.ProcessedOn = DateTime.UtcNow;
-            await _db.SaveChangesAsync(cancellationToken);
+            await _db.SaveChangesAsync(ct);
         }
 
-        public async Task MarkFailedAsync(Guid id, string error, CancellationToken cancellationToken)
+        public async Task MarkFailedAsync(Guid id, string error, CancellationToken ct)
         {
-            var msg = await _db.Set<OutboxMessage>().FindAsync([id], cancellationToken: cancellationToken);
+            var msg = await _db.Set<OutboxMessage>().FindAsync([id], ct);
             msg!.Error = error;
-            await _db.SaveChangesAsync(cancellationToken);
+            await _db.SaveChangesAsync(ct);
         }
     }
 }

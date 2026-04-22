@@ -53,7 +53,7 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
             }
         }
 
-        public async Task PublishAsync<T>(T message, CancellationToken cancellationToken = default)
+        public async Task PublishAsync<T>(T message, CancellationToken ct = default) where T : class
         {
             var messageId = Guid.NewGuid();
 
@@ -78,7 +78,7 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 
             try
             {
-                await _producer.ProduceAsync(topic: topic, messageProduce, cancellationToken).ConfigureAwait(false);
+                await _producer.ProduceAsync(topic: topic, messageProduce, ct).ConfigureAwait(false);
             }
             catch (ProduceException<string, string>)
             {
