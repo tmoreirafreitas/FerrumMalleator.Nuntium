@@ -46,6 +46,18 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"tmoreirafreitas_FerrumMalleator.Nuntium" /o:"ferrummalleator" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.exclusions="**/bin/**,**/obj/**,**/samples/**,**/examples/**,**/.github/**" /d:sonar.coverage.exclusions="**/*Tests*.cs,**/tests/**"
-          dotnet build
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin `
+            /k:"tmoreirafreitas_FerrumMalleator.Nuntium" `
+            /o:"ferrummalleator" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/samples/**,**/examples/**,**/.github/**" `
+            /d:sonar.coverage.exclusions="**/*Tests*.cs,**/tests/**" `
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.cobertura.xml"
+      
+          dotnet restore
+          dotnet build --no-restore -c Release
+      
+          dotnet test --no-build -c Release --collect:"XPlat Code Coverage"
+      
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
