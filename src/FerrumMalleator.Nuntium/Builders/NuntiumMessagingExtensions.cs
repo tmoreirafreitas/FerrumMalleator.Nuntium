@@ -120,10 +120,7 @@ namespace FerrumMalleator.Nuntium.Builders
 
             foreach (var (Implementation, Service) in busBuilder.Consumers)
             {
-                // 1. Registra o concreto
                 services.AddScoped(Implementation);
-
-                // 2. Faz a interface apontar para o mesmo objeto
                 services.AddScoped(Service, sp => sp.GetRequiredService(Implementation));
             }
 
