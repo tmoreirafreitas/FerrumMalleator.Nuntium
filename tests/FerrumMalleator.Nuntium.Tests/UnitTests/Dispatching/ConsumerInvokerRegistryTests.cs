@@ -7,9 +7,9 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Dispatching;
 
 public class ConsumerInvokerRegistryTests
 {
-    public record TestMessage;
+    private record TestMessage;
 
-    public class TestConsumer : IMessageConsumer<TestMessage>
+    private class TestConsumer : IMessageConsumer<TestMessage>
     {
         public bool Called { get; private set; }
 

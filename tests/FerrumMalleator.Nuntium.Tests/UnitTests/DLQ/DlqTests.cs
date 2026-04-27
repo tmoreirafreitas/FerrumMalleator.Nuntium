@@ -7,6 +7,7 @@ using FerrumMalleator.Nuntium.Dispatching;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
 using FerrumMalleator.Nuntium.Messaging.Models;
 using FerrumMalleator.Nuntium.Retry;
+using FerrumMalleator.Nuntium.Tests.Fake;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
@@ -15,22 +16,11 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
 {
     public class DlqTests
     {
-        internal record TestMessage(Guid Id);
-        internal class FailingConsumer : IMessageConsumer<TestMessage>
+        private record TestMessage(Guid Id);
+        private class FailingConsumer : IMessageConsumer<TestMessage>
         {
             public Task ConsumeAsync(TestMessage message, CancellationToken ct) => throw new Exception("fail");
-        }
-
-        internal class FakeTransport : IMessageTransport
-        {
-            public static bool Sent;
-
-            public Task SendAsync(string topic, string message, CancellationToken ct)
-            {
-                Sent = true;
-                return Task.CompletedTask;
-            }
-        }
+        }        
 
         [Fact]
         public async Task Should_send_to_dlq_on_failure()

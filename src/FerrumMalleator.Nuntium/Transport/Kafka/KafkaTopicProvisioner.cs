@@ -7,18 +7,18 @@ using Microsoft.Extensions.Options;
 
 namespace FerrumMalleator.Nuntium.Transport.Kafka
 {
-    internal sealed class KafkaTopicProvisioner(IOptions<KafkaOptions> options, MessageMetadataRegistry registry) : BackgroundService
+    internal sealed class KafkaTopicProvisioner(IKafkaAdminClient admin, IOptions<KafkaOptions> options, MessageMetadataRegistry registry) : BackgroundService
     {
         private readonly KafkaOptions _options = options.Value;
         private readonly MessageMetadataRegistry _registry = registry;
+        private readonly IKafkaAdminClient _admin = admin;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            using var admin = new AdminClientBuilder(new AdminClientConfig
-            {
-                BootstrapServers = _options.BootstrapServers
-            }).Build();
-
+            await ProvisionAsync(stoppingToken);
+        }
+        internal async Task ProvisionAsync(CancellationToken ct)
+        {
             var topics = _registry.GetAll()
                 .Select(x => new TopicSpecification
                 {
@@ -33,16 +33,14 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 
             try
             {
-                await admin.CreateTopicsAsync(topics);
+                await _admin.CreateTopicsAsync(topics);
             }
             catch (CreateTopicsException ex)
             {
                 foreach (var result in ex.Results)
                 {
                     if (result.Error.Code != ErrorCode.TopicAlreadyExists)
-                    {
                         throw;
-                    }
                 }
             }
         }

@@ -17,14 +17,14 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Saga
 {
     public class SagaDispatcherTests
     {
-        internal record TestMessage(Guid Id);
-        internal class TestState : ISagaState
+        private record TestMessage(Guid Id);
+        private class TestState : ISagaState
         {
             public bool Executed { get; set; }
             public Guid CorrelationId { get; set; } = default!;
         }
 
-        internal class TestSaga : ISagaHandler<TestMessage, TestState>
+        private class TestSaga : ISagaHandler<TestMessage, TestState>
         {
             public Task Handle(TestMessage message, TestState state, CancellationToken stoppingToken)
             {
