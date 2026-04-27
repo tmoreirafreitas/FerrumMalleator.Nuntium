@@ -5,7 +5,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Builders;
 
 public class MessageMetadataRegistryTests
 {
-    public record TestMessage;
+    private record TestMessage;
 
     [Fact]
     public void Should_register_and_resolve_message()

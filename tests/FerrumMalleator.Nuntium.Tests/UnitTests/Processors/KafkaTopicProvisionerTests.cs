@@ -1,0 +1,70 @@
+﻿using Confluent.Kafka.Admin;
+using FerrumMalleator.Nuntium.Builders;
+using FerrumMalleator.Nuntium.Configuration;
+using FerrumMalleator.Nuntium.Tests.Fake;
+using FerrumMalleator.Nuntium.Transport.Kafka;
+using FluentAssertions;
+using Microsoft.Extensions.Options;
+
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
+{
+    public class KafkaTopicProvisionerTests
+    {
+        private record TestMessage;
+
+        [Fact]
+        public async Task Should_create_topics()
+        {
+            var registry = new MessageMetadataRegistry();
+            registry.Register<TestMessage>("topic1", "group");
+
+            var admin = new FakeKafkaAdminClient();
+
+            var provisioner = new KafkaTopicProvisioner(
+                admin,
+                Options.Create(new KafkaOptions
+                {
+                    DefaultNumPartitions = 1,
+                    DefaultReplicationFactor = 1
+                }),
+                registry);
+
+            await provisioner.ProvisionAsync(CancellationToken.None);
+
+            admin.CreatedTopics.Should().ContainSingle();
+            admin.CreatedTopics[0].Name.Should().Be("topic1");
+        }
+
+        [Fact]
+        public async Task Should_ignore_topic_already_exists()
+        {
+            var registry = new MessageMetadataRegistry();
+            registry.Register<TestMessage>("topic1", "group");
+
+            var admin = new FakeKafkaAdminClient
+            {
+                ThrowAlreadyExists = true
+            };
+
+            var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
+
+            await provisioner.ProvisionAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public async Task Should_throw_on_unknown_error()
+        {
+            var registry = new MessageMetadataRegistry();
+            registry.Register<TestMessage>("topic1", "group");
+
+            var admin = new FakeKafkaAdminClient
+            {
+                ThrowOtherError = true
+            };
+
+            var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
+
+            await Assert.ThrowsAsync<CreateTopicsException>(() => provisioner.ProvisionAsync(CancellationToken.None));
+        }
+    }
+}

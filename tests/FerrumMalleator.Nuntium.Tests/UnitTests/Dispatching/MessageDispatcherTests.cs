@@ -14,9 +14,9 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Dispatching
 {
     public class MessageDispatcherTests
     {
-        internal record TestMessage(Guid Id);
+        private record TestMessage(Guid Id);
 
-        internal class TestConsumer : IMessageConsumer<TestMessage>
+        private class TestConsumer : IMessageConsumer<TestMessage>
         {
             public static bool Called;
 

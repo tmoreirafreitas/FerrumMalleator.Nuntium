@@ -128,10 +128,15 @@ namespace FerrumMalleator.Nuntium.Builders
 
             foreach (var group in grouped)
             {
+                services.AddSingleton<IKafkaConsumer, KafkaConsumerAdapter>(sp =>
+                {
+                    var options = sp.GetRequiredService<IOptions<KafkaOptions>>();
+                    return new KafkaConsumerAdapter(options, group.Key);
+                });
+
                 services.AddHostedService(provider =>
                     new KafkaConsumerWorker(
                         provider,
-                        provider.GetRequiredService<IOptions<KafkaOptions>>(),
                         group.Key,
                         group.Select(x => x.Topic)));
             }
