@@ -1,6 +1,6 @@
 ![NuGet](https://img.shields.io/nuget/v/FerrumMalleator.Nuntium)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Build](https://img.shields.io/github/actions/workflow/status/tmoreirafreitas/FerrumMalleator.Nuntium/blob/main/.github/workflows/ci.yml)
+![Build](https://img.shields.io/github/actions/workflow/status/.github/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tmoreirafreitas_FerrumMalleator.Nuntium\&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tmoreirafreitas_FerrumMalleator.Nuntium)
 
 # ⚒️ FerrumMalleator.Nuntium
