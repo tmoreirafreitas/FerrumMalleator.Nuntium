@@ -30,16 +30,22 @@ namespace FerrumMalleator.Nuntium.Builders
 
         public static NuntiumBusBuilder UseInMemory(this NuntiumBusBuilder builder)
         {
+            return builder
+                .UseInMemoryTransport()
+                .UseInMemoryPersistence();
+        }
+
+        public static NuntiumBusBuilder UseInMemoryPersistence(this NuntiumBusBuilder builder)
+        {
             builder.MessagingOptions.PersistenceMode = PersistenceMode.InMemory;
 
             builder.Services.AddSingleton(typeof(ISagaRepository<>), typeof(InMemorySagaRepository<>));
             builder.Services.AddSingleton<IOutboxStore, InMemoryOutboxStore>();
             builder.Services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
             builder.Services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
-            builder.Services.AddSingleton<IMessageTransport, InMemoryTransport>();
 
             return builder;
-        }
+        }        
 
         public static NuntiumBusBuilder UseRetry(this NuntiumBusBuilder builder, Action<RetryPolicyOptions> configure)
         {
@@ -67,6 +73,12 @@ namespace FerrumMalleator.Nuntium.Builders
 
             builder.Services.AddHostedService<OutboxProcessor>();
 
+            return builder;
+        }
+
+        public static NuntiumBusBuilder UseInMemoryTransport(this NuntiumBusBuilder builder)
+        {
+            builder.Services.AddSingleton<IMessageTransport, InMemoryTransport>();
             return builder;
         }
 

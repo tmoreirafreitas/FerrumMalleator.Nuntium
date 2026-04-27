@@ -11,7 +11,7 @@ namespace FerrumMalleator.Nuntium.Sagas.Handlers
         {
             var handler = provider.GetRequiredService<ISagaHandler<TMessage, TState>>();
 
-            await handler.Handle((TMessage)message, (TState)state, ct);
+            await handler.HandleAsync((TMessage)message, (TState)state, ct);
         }
     }
 }

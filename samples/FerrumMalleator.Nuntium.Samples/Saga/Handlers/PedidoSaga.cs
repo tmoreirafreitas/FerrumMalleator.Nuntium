@@ -7,7 +7,7 @@ namespace FerrumMalleator.Nuntium.Samples.Saga.Handlers
 {
     internal sealed class PedidoSaga(IMessagePublisher _publisher) : ISagaHandler<PedidoCriado, PedidoSagaState>, ISagaHandler<PagamentoAprovado, PedidoSagaState>
     {
-        public async Task Handle(PedidoCriado message, PedidoSagaState state, CancellationToken stoppingToken)
+        public async Task HandleAsync(PedidoCriado message, PedidoSagaState state, CancellationToken stoppingToken)
         {
             state.PedidoCriado = true;
 
@@ -16,7 +16,7 @@ namespace FerrumMalleator.Nuntium.Samples.Saga.Handlers
             await TryFinalize(state, message.PedidoId, stoppingToken);
         }
 
-        public async Task Handle(PagamentoAprovado message, PedidoSagaState state, CancellationToken stoppingToken)
+        public async Task HandleAsync(PagamentoAprovado message, PedidoSagaState state, CancellationToken stoppingToken)
         {
             state.PagamentoAprovado = true;
 

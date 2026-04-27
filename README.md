@@ -1,6 +1,6 @@
 ![NuGet](https://img.shields.io/nuget/v/FerrumMalleator.Nuntium)
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Build](https://img.shields.io/github/actions/workflow/status/seuuser/repo/ci.yml)
+![Build](https://img.shields.io/github/actions/workflow/status/tmoreirafreitas/FerrumMalleator.Nuntium/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tmoreirafreitas_FerrumMalleator.Nuntium\&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tmoreirafreitas_FerrumMalleator.Nuntium)
 
 # ⚒️ FerrumMalleator.Nuntium
@@ -51,7 +51,7 @@ Sem sofrimento.
 
 * 🧠 **Orientado a Handlers** (estilo MediatR)
 * ⚡ **Configuração fluida e intuitiva**
-* 🔌 **Transporte desacoplado (Kafka hoje, outros amanhã)**
+* 🔌 **Transporte desacoplado (Kafka, InMemory e outros futuros)**
 * 💾 **Outbox integrado (consistência garantida)**
 * 🔁 **Idempotência nativa**
 * 🔗 **Saga simplificada (orquestração distribuída)**
@@ -131,6 +131,69 @@ public class PedidoCriadoConsumer : IMessageConsumer<PedidoCriado>
 
 ---
 
+## 🧱 Transporte vs Persistência
+
+O Nuntium separa claramente duas responsabilidades fundamentais:
+
+```text
+Transporte  → como a mensagem é enviada (Kafka, InMemory, etc)
+Persistência → onde estados e mensagens são armazenados (EF Core, InMemory)
+```
+
+Essa separação permite maior flexibilidade, clareza e previsibilidade na configuração.
+
+---
+
+### 1. Produção (Kafka + EF Core)
+```csharp
+builder.Services.AddNuntium(bus =>
+{
+    bus.UseKafka(opt =>
+    {
+        opt.BootstrapServers = "localhost:9092";
+    })
+    .UseEfCorePersistence<SampleDbContext>(opt =>
+    {
+        opt.UseSqlServer("connection-string");
+    })
+    .UseOutbox()
+    .UseRetry(r => r.MaxAttempts = 3)
+    .AddSaga()
+    .WithTopic<PedidoCriado>("pedido.criado", "pedido-group")
+    .AddConsumer<PedidoCriadoConsumer, PedidoCriado>();
+});
+```
+
+---
+
+### 2. Testes / Desenvolvimento (InMemory)
+
+```csharp
+builder.Services.AddNuntium(bus =>
+{
+    bus.UseInMemoryTransport()
+       .UseInMemoryPersistence()
+       .UseOutbox()
+       .UseRetry(r => r.MaxAttempts = 3)
+       .AddSaga()
+       .WithTopic<PedidoCriado>("pedido.criado", "pedido-group")
+       .AddConsumer<PedidoCriadoConsumer, PedidoCriado>();
+});
+```
+
+---
+
+### 3. Compatibilidade
+O método .UseInMemory() continua disponível e equivale a:
+
+```csharp
+.UseInMemoryTransport()
+.UseInMemoryPersistence()
+```
+
+---
+
+
 ## 🔁 Outbox (Consistência garantida)
 
 ```text
@@ -183,7 +246,7 @@ public class PedidoSaga :
 
 ---
 
-## 🧱 Produção com Entity Framework
+## 🧱 Persistência com Entity Framework
 
 Para ambientes de produção, utilize persistência com Entity Framework:
 
@@ -194,7 +257,7 @@ builder.Services.AddNuntium(bus =>
     {
         opt.BootstrapServers = "localhost:9092";
     })
-    .UsePersistence<SampleDbContext>(opt =>
+    .UseEfCorePersistence<SampleDbContext>(opt =>
     {
         opt.UseInMemoryDatabase("nuntium"); // ou UseSqlServer / UseNpgsql
     })
