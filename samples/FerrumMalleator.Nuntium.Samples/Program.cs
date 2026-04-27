@@ -41,7 +41,7 @@ builder.Services.AddNuntium(bus =>
     .WithTopic<PedidoCriado>("pedido-criado", "pedido-group")
     .WithTopic<PagamentoAprovado>("pagamento-aprovado", "pedido-group")
     .WithTopic<PedidoFinalizado>("pedido-finalizado", "pedido-group")
-    .UsePersistence<SamplesDbContext>(opt =>
+    .UseEfCorePersistence<SamplesDbContext>(opt =>
     {
         opt.UseInMemoryDatabase("SampleNuntiumDb");
     });

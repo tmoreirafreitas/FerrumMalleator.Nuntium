@@ -9,7 +9,7 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders
 {
     public static class NuntiumPersistenceExtensions
     {
-        public static NuntiumBusBuilder UsePersistence<TDbContext>(this NuntiumBusBuilder builder, Action<DbContextOptionsBuilder> configure)
+        public static NuntiumBusBuilder UseEfCorePersistence<TDbContext>(this NuntiumBusBuilder builder, Action<DbContextOptionsBuilder> configure)
             where TDbContext : NuntiumDbContext
         {
             builder.MessagingOptions.PersistenceMode = PersistenceMode.EntityFramework;

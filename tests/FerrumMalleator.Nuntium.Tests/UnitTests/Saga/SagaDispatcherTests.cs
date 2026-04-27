@@ -26,7 +26,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Saga
 
         private class TestSaga : ISagaHandler<TestMessage, TestState>
         {
-            public Task Handle(TestMessage message, TestState state, CancellationToken stoppingToken)
+            public Task HandleAsync(TestMessage message, TestState state, CancellationToken stoppingToken)
             {
                 state.Executed = true;
                 return Task.CompletedTask;
