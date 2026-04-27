@@ -2,9 +2,11 @@
 using Confluent.Kafka.Admin;
 using FerrumMalleator.Nuntium.Configuration;
 using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Transport.Kafka
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class KafkaAdminClient(IOptions<KafkaOptions> options) : IKafkaAdminClient
     {
         private readonly KafkaOptions _options = options.Value;

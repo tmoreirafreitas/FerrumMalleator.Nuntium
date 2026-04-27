@@ -73,9 +73,10 @@ namespace FerrumMalleator.Nuntium.Builders
         public static NuntiumBusBuilder UseKafka(this NuntiumBusBuilder builder, Action<KafkaOptions> configure)
         {
             builder.Services.Configure(configure);
-
+            
             builder.Services.AddSingleton<KafkaPublisher>();
             builder.Services.AddSingleton<IMessageTransport>(sp => sp.GetRequiredService<KafkaPublisher>());
+            builder.Services.AddSingleton<IKafkaAdminClient, KafkaAdminClient>();
             builder.Services.AddHostedService<KafkaTopicProvisioner>();
 
             return builder;
@@ -93,7 +94,7 @@ namespace FerrumMalleator.Nuntium.Builders
             services.AddScoped<MessageDispatcher>();
             services.AddSingleton(busBuilder.Registry);
             services.AddSingleton(busBuilder.ConsumerInvokerRegistry);
-            services.AddSingleton<ITopicResolver>(new TopicResolver(busBuilder.Registry));
+            services.AddSingleton<ITopicResolver>(new TopicResolver(busBuilder.Registry));            
 
             services.AddScoped(sp =>
             {
