@@ -1,9 +1,11 @@
 ﻿using Confluent.Kafka;
 using FerrumMalleator.Nuntium.Configuration;
 using Microsoft.Extensions.Options;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Transport.Kafka
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class KafkaConsumerAdapter : IKafkaConsumer, IDisposable
     {
         private readonly KafkaOptions _options;

@@ -1,8 +1,10 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions;
 using FerrumMalleator.Nuntium.Abstractions.Persistence;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Persistence.InMemory
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class InMemorySagaRepository<T> : ISagaRepository<T> where T : class, ISagaState, new()
     {
         private readonly Dictionary<Guid, T> _store = [];

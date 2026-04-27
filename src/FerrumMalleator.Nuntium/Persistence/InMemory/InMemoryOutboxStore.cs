@@ -1,9 +1,11 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions.Persistence;
 using FerrumMalleator.Nuntium.Outbox;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Persistence.InMemory
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class InMemoryOutboxStore : IOutboxStore
     {
         private readonly ConcurrentBag<OutboxMessage> _messages = [];

@@ -1,7 +1,9 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions.Persistence;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Persistence.InMemory
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class InMemoryIdempotencyStore : IIdempotencyStore
     {
         private readonly HashSet<Guid> _processed = [];

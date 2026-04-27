@@ -1,5 +1,8 @@
-﻿namespace FerrumMalleator.Nuntium.Sagas.Handlers
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace FerrumMalleator.Nuntium.Sagas.Handlers
 {
+    [ExcludeFromCodeCoverage]
     internal sealed class SagaHandlerDescriptor
     {
         public Type MessageType { get; set; } = default!;
