@@ -87,5 +87,50 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Saga
             state.Should().NotBeNull();
             state!.Executed.Should().BeTrue();
         }
+
+        [Fact]
+        public async Task Should_ignore_when_no_saga_registered()
+        {
+            var services = new ServiceCollection();
+
+            var registry = new MessageMetadataRegistry();
+            registry.Register<TestMessage>("test", "group");
+            registry.Register<DeadLetterMessage>("dlq", "group");
+
+            var consumerRegistry = new ConsumerInvokerRegistry();            
+
+            services.AddSingleton(registry);
+            services.AddSingleton(consumerRegistry);            
+
+            services.AddScoped<MessageDispatcher>();
+            services.AddScoped<SagaDispatcher>();
+            services.AddScoped<ISagaHandler<TestMessage, TestState>, TestSaga>();
+
+            services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
+            services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+            services.AddSingleton<ISagaRepository<TestState>, InMemorySagaRepository<TestState>>();
+            services.AddSingleton<IMessageTransport, InMemoryTransport>();            
+
+            var provider = services.BuildServiceProvider();
+
+            var dispatcher = new MessageDispatcher(
+                provider,
+                registry,
+                consumerRegistry,
+                null);
+
+            var metadata = registry.Get<TestMessage>();
+
+            var envelope = new MessageEnvelope<TestMessage>
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = metadata.Key,
+                Payload = new TestMessage(Guid.NewGuid())
+            };
+
+            var json = JsonSerializer.Serialize(envelope);
+
+            await dispatcher.DispatchAsync(json, CancellationToken.None);
+        }
     }
 }
