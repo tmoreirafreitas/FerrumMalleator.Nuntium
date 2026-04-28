@@ -45,7 +45,7 @@ namespace FerrumMalleator.Nuntium.Builders
             builder.Services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
 
             return builder;
-        }        
+        }
 
         public static NuntiumBusBuilder UseRetry(this NuntiumBusBuilder builder, Action<RetryPolicyOptions> configure)
         {
@@ -85,7 +85,8 @@ namespace FerrumMalleator.Nuntium.Builders
         public static NuntiumBusBuilder UseKafka(this NuntiumBusBuilder builder, Action<KafkaOptions> configure)
         {
             builder.Services.Configure(configure);
-            
+
+            builder.Services.AddSingleton<IKafkaProducerFactory, KafkaProducerFactory>();
             builder.Services.AddSingleton<KafkaPublisher>();
             builder.Services.AddSingleton<IMessageTransport>(sp => sp.GetRequiredService<KafkaPublisher>());
             builder.Services.AddSingleton<IKafkaAdminClient, KafkaAdminClient>();
@@ -106,7 +107,7 @@ namespace FerrumMalleator.Nuntium.Builders
             services.AddScoped<MessageDispatcher>();
             services.AddSingleton(busBuilder.Registry);
             services.AddSingleton(busBuilder.ConsumerInvokerRegistry);
-            services.AddSingleton<ITopicResolver>(new TopicResolver(busBuilder.Registry));            
+            services.AddSingleton<ITopicResolver>(new TopicResolver(busBuilder.Registry));
 
             services.AddScoped(sp =>
             {
@@ -183,7 +184,7 @@ namespace FerrumMalleator.Nuntium.Builders
                         .Any(i => i.IsGenericType &&
                                   i.GetGenericTypeDefinition() == typeof(ISagaHandler<,>)))
                     .ToList();
-                
+
                 Console.WriteLine($"[Nuntium] Saga handlers encontrados: {sagaTypes.Count}");
 
                 foreach (var saga in sagaTypes)
