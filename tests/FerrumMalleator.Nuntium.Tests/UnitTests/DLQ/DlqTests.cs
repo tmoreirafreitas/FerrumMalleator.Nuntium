@@ -20,7 +20,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
         private class FailingConsumer : IMessageConsumer<TestMessage>
         {
             public Task ConsumeAsync(TestMessage message, CancellationToken ct) => throw new Exception("fail");
-        }        
+        }
 
         [Fact]
         public async Task Should_send_to_dlq_on_failure()
@@ -45,7 +45,9 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
                 Delays = []
             }));
 
-            services.AddSingleton<IMessageTransport, FakeTransport>();
+            var transporte = new FakeTransport { Throw = true };
+
+            services.AddSingleton<IMessageTransport>(transporte);
 
             var provider = services.BuildServiceProvider();
 
@@ -68,7 +70,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
 
             await Assert.ThrowsAsync<Exception>(async () => await dispatcher.DispatchAsync(json, CancellationToken.None));
 
-            FakeTransport.Sent.Should().BeTrue();
+            transporte.Throw.Should().BeTrue();
         }
     }
 }

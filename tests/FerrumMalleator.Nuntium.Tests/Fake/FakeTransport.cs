@@ -4,8 +4,8 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
 {
     internal class FakeTransport : IMessageTransport
     {
-        public static bool Sent;
-        public static bool Throw;
+        public bool Sent;
+        public bool Throw;
 
         public Task SendAsync(string topic, string message, CancellationToken ct)
         {

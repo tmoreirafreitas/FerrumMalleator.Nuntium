@@ -17,7 +17,9 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
             var services = new ServiceCollection();            
 
             services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
-            services.AddSingleton<IMessageTransport, FakeTransport>();
+
+            var transporte = new FakeTransport { Throw = true };
+            services.AddSingleton<IMessageTransport>(transporte);
 
             var provider = services.BuildServiceProvider();
             using var scope = provider.CreateScope();
@@ -38,7 +40,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
 
             await deadLetterReprocessor.ProcessOnceAsync(CancellationToken.None);
 
-            FakeTransport.Sent.Should().BeTrue();
+            transporte.Throw.Should().BeTrue();
         }
     }
 }
