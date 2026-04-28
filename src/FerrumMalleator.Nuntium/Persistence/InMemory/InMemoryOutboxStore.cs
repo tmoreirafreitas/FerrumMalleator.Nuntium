@@ -9,6 +9,7 @@ namespace FerrumMalleator.Nuntium.Persistence.InMemory
     internal sealed class InMemoryOutboxStore : IOutboxStore
     {
         private readonly ConcurrentBag<OutboxMessage> _messages = [];
+        public IReadOnlyDictionary<Guid, OutboxMessage> Messages => _messages.ToDictionary(x => x.Id);
 
         public Task AddAsync(OutboxMessage message, CancellationToken cancellation)
         {
