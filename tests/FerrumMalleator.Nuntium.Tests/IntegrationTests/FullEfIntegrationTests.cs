@@ -4,6 +4,7 @@ using FerrumMalleator.Nuntium.Abstractions.Persistence;
 using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Builders;
 using FerrumMalleator.Nuntium.Outbox;
+using FerrumMalleator.Nuntium.Persistence.EntityFramework;
 using FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders;
 using FerrumMalleator.Nuntium.Persistence.EntityFramework.Context;
 using FerrumMalleator.Nuntium.Sagas.Handlers;
@@ -125,6 +126,27 @@ namespace FerrumMalleator.Nuntium.Tests.IntegrationTests
 
             state.Should().NotBeNull();
             state!.Criado.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Should_store_and_retrieve_saga_state()
+        {
+            var options = new DbContextOptionsBuilder<TestDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+            using var context = new TestDbContext(options);
+
+            var repo = new EfSagaRepository<PedidoState>(context);
+
+            var correlationId = Guid.NewGuid();
+            var state = new PedidoState { Criado = true , CorrelationId = correlationId };
+
+            await repo.SaveAsync(state, CancellationToken.None);
+
+            var result = await repo.GetAsync(correlationId, CancellationToken.None);
+
+            result.Should().NotBeNull();
         }
     }
 }

@@ -30,4 +30,7 @@
 		<ProjectReference Include="..\FerrumMalleator.Nuntium\FerrumMalleator.Nuntium.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="FerrumMalleator.Nuntium.Tests" />
+	</ItemGroup>
 </Project>
