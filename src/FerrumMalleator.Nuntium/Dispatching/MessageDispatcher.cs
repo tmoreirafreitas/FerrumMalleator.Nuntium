@@ -21,16 +21,14 @@ namespace FerrumMalleator.Nuntium.Dispatching
 
         public async Task DispatchAsync(string json, CancellationToken ct)
         {
-            var meta = JsonSerializer.Deserialize<BaseEnvelope>(json)
-                ?? throw new InvalidOperationException();
+            var meta = JsonSerializer.Deserialize<BaseEnvelope>(json);
 
-            var metadata = _messageTypeRegistry.Get(meta.MessageType);
+            var metadata = _messageTypeRegistry.Get(meta!.MessageType);
             var messageType = metadata.Type;
 
             var envelopeType = typeof(MessageEnvelope<>).MakeGenericType(messageType);
 
-            var envelope = JsonSerializer.Deserialize(json, envelopeType)
-                ?? throw new InvalidOperationException();
+            var envelope = JsonSerializer.Deserialize(json, envelopeType);
 
             var payloadProperty = envelopeType.GetProperty("Payload")!;
             var rawPayload = payloadProperty.GetValue(envelope)!;
