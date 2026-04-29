@@ -4,14 +4,16 @@
 		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<PropertyGroup>
 		<PackageId>FerrumMalleator.Nuntium.Persistence.EntityFramework</PackageId>
-		<Version>0.1.0</Version>
+		<Version>$(Version)</Version>
 		<Description>Entity Framework persistence provider for FerrumMalleator.Nuntium.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/tmoreirafreitas/FerrumMalleator.Nuntium</PackageProjectUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
@@ -26,8 +28,12 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
 		<ProjectReference Include="..\FerrumMalleator.Nuntium\FerrumMalleator.Nuntium.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(Configuration)' == 'Release'">
+		<PackageReference Include="FerrumMalleator.Nuntium" Version="0.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
