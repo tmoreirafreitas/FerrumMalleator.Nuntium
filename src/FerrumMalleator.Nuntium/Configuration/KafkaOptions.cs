@@ -1,7 +1,9 @@
 ﻿using Confluent.Kafka;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Configuration
 {
+    [ExcludeFromCodeCoverage]
     public sealed class KafkaOptions
     {
         public string BootstrapServers { get; set; } = "localhost:9092";

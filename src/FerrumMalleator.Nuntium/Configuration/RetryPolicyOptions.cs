@@ -1,5 +1,8 @@
-﻿namespace FerrumMalleator.Nuntium.Configuration
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace FerrumMalleator.Nuntium.Configuration
 {
+    [ExcludeFromCodeCoverage]
     public sealed class RetryPolicyOptions
     {
         public int MaxAttempts { get; set; } = 4;

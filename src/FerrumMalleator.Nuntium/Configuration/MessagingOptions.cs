@@ -1,5 +1,8 @@
-﻿namespace FerrumMalleator.Nuntium.Configuration
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace FerrumMalleator.Nuntium.Configuration
 {
+    [ExcludeFromCodeCoverage]
     public class MessagingOptions
     {
         public PersistenceMode PersistenceMode { get; set; } = PersistenceMode.InMemory;

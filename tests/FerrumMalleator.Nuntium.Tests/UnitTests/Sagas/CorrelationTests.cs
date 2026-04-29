@@ -2,7 +2,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Saga;
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas;
 
 public class CorrelationTests
 {

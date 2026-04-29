@@ -1,11 +1,9 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Dispatching;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Transport.InMemory
-{
-    [ExcludeFromCodeCoverage]
+{    
     internal sealed class InMemoryTransport(IServiceProvider provider) : IMessageTransport
     {
         private readonly IServiceProvider _provider = provider;

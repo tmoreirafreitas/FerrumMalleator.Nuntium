@@ -49,27 +49,19 @@ namespace FerrumMalleator.Nuntium.Dispatching
                 {
                     if (_consumerInvokerRegistry.HasHandler(messageType))
                     {
-                        await _consumerInvokerRegistry.Invoke(
-                            messageType,
-                            _provider,
-                            payload,
-                            ct);
+                        await _consumerInvokerRegistry.Invoke(messageType, _provider, payload, ct);
                     }
 
                     if (_sagaRegistry != null && _sagaRegistry.Contains(messageType))
                     {
                         var sagaDispatcher = _provider.GetRequiredService<SagaDispatcher>();
 
-                        await sagaDispatcher.DispatchAsync(
-                            (IMessageEnvelope)envelope,
-                            messageType,
-                            payload,
-                            ct);
+                        await sagaDispatcher.DispatchAsync((IMessageEnvelope)envelope!, messageType, payload, ct);
                     }
                 },
                 async (ex, retryCount) =>
                 {
-                    var baseEnvelope = (IMessageEnvelope)envelope;
+                    var baseEnvelope = (IMessageEnvelope)envelope!;
 
                     var dlqMessage = new DeadLetterMessage
                     {
