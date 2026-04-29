@@ -10,12 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
       - name: Restore
         run: dotnet restore
@@ -24,9 +28,22 @@ jobs:
         run: dotnet build -c Release --no-restore
 
       - name: Pack
-        run: dotnet pack -c Release --no-build
+        run: dotnet pack -c Release --no-build -p:Version=${{ env.VERSION }}
 
-      - name: Publish
-        run: dotnet nuget push "**/*.nupkg" \
-          --api-key ${{ secrets.NUGET_API_KEY }} \
-          --source https://api.nuget.org/v3/index.json
+      - name: Publish core package
+        run: |
+          dotnet nuget push "**/FerrumMalleator.Nuntium.*.nupkg" \
+            --skip-duplicate \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json
+
+      - name: Publish EF package (retry)
+        run: |
+          for i in {1..5}; do
+            dotnet nuget push "**/FerrumMalleator.Nuntium.Persistence.EntityFramework.*.nupkg" \
+              --skip-duplicate \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json && break
+            echo "Retrying in 10s..."
+            sleep 10
+          done
