@@ -28,12 +28,8 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
 	</ItemGroup>
 
-	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
+	<ItemGroup>
 		<ProjectReference Include="..\FerrumMalleator.Nuntium\FerrumMalleator.Nuntium.csproj" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Release'">
-		<PackageReference Include="FerrumMalleator.Nuntium" Version="0.1.0" />
 	</ItemGroup>
 
 	<ItemGroup>
