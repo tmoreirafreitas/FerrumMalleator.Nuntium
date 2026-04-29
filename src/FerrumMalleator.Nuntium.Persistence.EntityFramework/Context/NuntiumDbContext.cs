@@ -13,10 +13,18 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework.Context
             modelBuilder.Entity<DeadLetterMessage>(e =>
             {
                 e.HasKey(x => x.MessageId);
+
                 e.Property(x => x.MessageType).IsRequired();
                 e.Property(x => x.PayloadJson).IsRequired();
                 e.Property(x => x.Error).IsRequired();
+                e.Property(x => x.StackTrace).IsRequired();
                 e.Property(x => x.FailedAt).IsRequired();
+
+                e.Property(x => x.RetryCount).IsRequired();
+                e.Property(x => x.ReprocessCount).IsRequired();
+                e.Property(x => x.Reprocessed).IsRequired();
+
+                e.Property(x => x.NextRetryAt).IsRequired(false);
             });
 
             modelBuilder.Entity<OutboxMessage>(e =>
