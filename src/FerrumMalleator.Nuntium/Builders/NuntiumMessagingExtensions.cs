@@ -10,6 +10,7 @@ using FerrumMalleator.Nuntium.Persistence.InMemory;
 using FerrumMalleator.Nuntium.Resolution;
 using FerrumMalleator.Nuntium.Retry;
 using FerrumMalleator.Nuntium.Sagas.Handlers;
+using FerrumMalleator.Nuntium.Transport.Default;
 using FerrumMalleator.Nuntium.Transport.InMemory;
 using FerrumMalleator.Nuntium.Transport.Kafka;
 using Microsoft.Extensions.DependencyInjection;
@@ -118,8 +119,9 @@ namespace FerrumMalleator.Nuntium.Builders
                     return ActivatorUtilities.CreateInstance<OutboxPublisher>(sp);
                 }
 
-                return sp.GetRequiredService<IMessageTransport>() as IMessagePublisher
-                       ?? throw new InvalidOperationException("Transport must implement IMessagePublisher");
+                return ActivatorUtilities.CreateInstance<DefaultMessagePublisher>(sp) as IMessagePublisher;
+                //return sp.GetRequiredService<IMessageTransport>() as IMessagePublisher
+                //       ?? throw new InvalidOperationException("Transport must implement IMessagePublisher");
             });
 
             if (!services.Any(s => s.ServiceType == typeof(IRetryExecutor)))

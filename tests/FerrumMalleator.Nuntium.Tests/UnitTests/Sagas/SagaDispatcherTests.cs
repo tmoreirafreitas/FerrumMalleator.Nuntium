@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.Text.Json;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Saga
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
 {
     public class SagaDispatcherTests
     {

@@ -2,9 +2,11 @@
 using FerrumMalleator.Nuntium.Configuration;
 using FerrumMalleator.Nuntium.Dispatching;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Builders
 {
+    [ExcludeFromCodeCoverage]
     public sealed class NuntiumBusBuilder(IServiceCollection services)
     {
         internal IList<(Type Implementation, Type Service)> Consumers { get; } = [];
