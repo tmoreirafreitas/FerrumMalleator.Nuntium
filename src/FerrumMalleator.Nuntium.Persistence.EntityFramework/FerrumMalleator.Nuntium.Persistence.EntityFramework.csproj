@@ -11,6 +11,7 @@
 		<Version>$(Version)</Version>
 		<Description>Entity Framework persistence provider for FerrumMalleator.Nuntium.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>logo-icon.png</PackageIcon>
 		<PackageProjectUrl>https://github.com/tmoreirafreitas/FerrumMalleator.Nuntium</PackageProjectUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -34,5 +35,9 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="FerrumMalleator.Nuntium.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\assents\logo-icon.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 </Project>
