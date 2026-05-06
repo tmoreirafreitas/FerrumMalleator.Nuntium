@@ -170,9 +170,7 @@ namespace FerrumMalleator.Nuntium.Builders
                     return ActivatorUtilities.CreateInstance<OutboxPublisher>(sp);
                 }
 
-                return ActivatorUtilities.CreateInstance<DefaultMessagePublisher>(sp) as IMessagePublisher;
-                //return sp.GetRequiredService<IMessageTransport>() as IMessagePublisher
-                //       ?? throw new InvalidOperationException("Transport must implement IMessagePublisher");
+                return ActivatorUtilities.CreateInstance<DefaultMessagePublisher>(sp) as IMessagePublisher;                
             });
 
             if (!services.Any(s => s.ServiceType == typeof(IRetryExecutor)))
