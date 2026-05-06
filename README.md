@@ -49,15 +49,15 @@ Sem sofrimento.
 
 ## ✔ Principais características
 
-* 🧠 **Orientado a Handlers** (estilo MediatR)
-* ⚡ **Configuração fluida e intuitiva**
-* 🔌 **Transporte desacoplado (Kafka, InMemory e outros futuros)**
-* 💾 **Outbox integrado (consistência garantida)**
-* 🔁 **Idempotência nativa**
-* 🔗 **Saga simplificada (orquestração distribuída)**
-* ☠️ **Dead Letter Queue (DLQ) com reprocessamento automático e backoff exponencial**
-* 🔄 **Retry com política configurável**
-* 🧩 **Arquitetura extensível**
+🧠 **Orientado a Handlers** (estilo MediatR)  
+⚡ **Configuração fluida e intuitiva**  
+🔌 **Transporte desacoplado (Kafka, InMemory e outros futuros)**  
+💾 **Outbox integrado (consistência garantida)**  
+🔁 **Idempotência nativa**  
+🔗 **Saga simplificada (orquestração distribuída)**  
+☠️ **Dead Letter Queue (DLQ) com reprocessamento automático e backoff exponencial**  
+🔄 **Retry com política configurável**  
+🧩 **Arquitetura extensível**  
 
 ---
 
@@ -131,6 +131,25 @@ public class PedidoCriadoConsumer : IMessageConsumer<PedidoCriado>
 
 ---
 
+## 📦 Samples
+
+O projeto possui exemplos práticos no projeto:
+
+`FerrumMalleator.Nuntium.Samples`
+
+Os samples demonstram cenários comuns de mensageria:
+
+* Producer / Consumer
+* Retry e DLQ
+* Outbox Pattern
+* Saga
+* Transporte e persistência InMemory
+* Integração com Entity Framework
+
+O objetivo é permitir entendimento rápido da arquitetura e facilitar a adoção do framework.
+
+---
+
 ## 🧱 Transporte vs Persistência
 
 O Nuntium separa claramente duas responsabilidades fundamentais:
@@ -200,9 +219,9 @@ O método .UseInMemory() continua disponível e equivale a:
 Aplicação → Outbox → Transporte → Consumer
 ```
 
-✔ nenhuma mensagem perdida
-✔ consistência entre banco e mensageria
-✔ tolerância a falhas
+✔ nenhuma mensagem perdida  
+✔ consistência entre banco e mensageria  
+✔ tolerância a falhas  
 
 ---
 
@@ -212,10 +231,10 @@ Aplicação → Outbox → Transporte → Consumer
 Falha → DLQ → Reprocessamento automático → Recuperação
 ```
 
-✔ retry automático
-✔ backoff exponencial
-✔ controle de tentativas
-✔ reenvio transparente
+✔ retry automático  
+✔ backoff exponencial  
+✔ controle de tentativas  
+✔ reenvio transparente  
 
 ---
 
@@ -240,8 +259,8 @@ public class PedidoSaga :
 }
 ```
 
-✔ correlação automática (`Id`, `*Id`, `CorrelationId`)
-✔ estado persistido automaticamente
+✔ correlação automática (`Id`, `*Id`, `CorrelationId`)  
+✔ estado persistido automaticamente  
 ✔ integração com retry e DLQ
 
 ---
@@ -382,9 +401,9 @@ O Nuntium é a primeira dessas ferramentas.
 
 Outras soluções planejadas:
 
-* 📦 FerrumMalleator.Mediator
-* 🔑 FerrumMalleator.Identifiers (IDs determinísticos)
-* 🧰 Utilitários do dia a dia
+📦 FerrumMalleator.Mediator  
+🔑 FerrumMalleator.Identifiers (IDs determinísticos)  
+🧰 Utilitários do dia a dia  
 
 ---
 
