@@ -287,7 +287,7 @@ IMessagePublisher → (Outbox ou direto)
 
 ---
 
-## 🧩 Extensibilidade
+## 🧩 Transportes
 
 Suporte planejado para múltiplos transports:
 
@@ -296,6 +296,55 @@ Suporte planejado para múltiplos transports:
 * ActiveMQ (futuro)
 
 Sem alterar o código da aplicação.
+
+---
+
+## 🧩 Extensibilidade
+
+O Nuntium segue um princípio simples:
+
+> **Convention first, extensibility by contract.**
+
+O framework possui comportamentos padrão prontos para uso —
+mas os principais componentes são baseados em contratos públicos.
+
+Isso permite substituir implementações internas apenas registrando novas implementações no container de DI.
+
+---
+
+### Exemplo: substituindo o transporte
+
+```csharp
+services.AddSingleton<IMessageTransport, CustomTransport>();
+```
+   
+---
+
+### Componentes extensíveis
+
+Os principais contratos públicos incluem:
+
+* `IMessageTransport`
+* `IMessagePublisher`
+* `IRetryExecutor`
+* `IOutboxStore`
+* `IDeadLetterStore`
+* `ISagaHandler<TMessage, TState>`
+
+---
+
+### Objetivo
+
+O objetivo é permitir customização sem transformar o framework em uma caixa-preta complexa.
+
+```text
+Comportamentos padrão quando possível
+Customização quando necessário
+```
+
+* Sem reflection excessiva.
+* Sem XML.
+* Sem configuração proprietária.
 
 ---
 
