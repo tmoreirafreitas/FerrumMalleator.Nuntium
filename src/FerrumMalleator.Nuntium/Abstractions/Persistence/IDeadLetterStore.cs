@@ -24,10 +24,5 @@ namespace FerrumMalleator.Nuntium.Abstractions.Persistence
         /// Marks a message as successfully reprocessed.
         /// </summary>
         Task MarkReprocessedAsync(Guid messageId, CancellationToken cancellation);
-
-        /// <summary>
-        /// Updates retry metadata for a failed message.
-        /// </summary>
-        Task UpdateRetryAsync(Guid messageId, int reprocessCount, DateTime nextRetryAt, CancellationToken cancellation);
     }
 }
