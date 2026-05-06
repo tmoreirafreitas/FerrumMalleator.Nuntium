@@ -17,6 +17,16 @@ namespace FerrumMalleator.Nuntium.Builders
         internal SagaOptions SagaOptions { get; } = new();
         public IServiceCollection Services { get; } = services;
 
+        /// <summary>
+        /// Registers a message consumer.
+        /// </summary>
+        /// <typeparam name="TConsumer">Consumer implementation.</typeparam>
+        /// <typeparam name="TMessage">Message type handled by the consumer.</typeparam>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Consumers are responsible for handling incoming messages.
+        /// Multiple consumers can be registered for different message types.
+        /// </remarks>
         public NuntiumBusBuilder AddConsumer<TConsumer, TMessage>()
             where TConsumer : class, IMessageConsumer<TMessage>
         {
@@ -25,6 +35,17 @@ namespace FerrumMalleator.Nuntium.Builders
             return this;
         }
 
+        /// <summary>
+        /// Maps a message type to a Kafka topic and consumer group.
+        /// </summary>
+        /// <typeparam name="TMessage">Message type.</typeparam>
+        /// <param name="topic">Kafka topic name.</param>
+        /// <param name="groupId">Consumer group identifier.</param>
+        /// <param name="partitionKey">Optional partition key selector.</param>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Defines how messages are routed and consumed within Kafka.
+        /// </remarks>
         public NuntiumBusBuilder WithTopic<TMessage>(string topic, string groupId, Func<TMessage, string>? partitionKey = null)
         {
             Registry.Register<TMessage>(topic, groupId, partitionKey is null ? null : msg => partitionKey((TMessage)msg));
