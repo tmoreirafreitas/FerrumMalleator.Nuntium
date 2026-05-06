@@ -9,6 +9,15 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders
 {
     public static class NuntiumPersistenceExtensions
     {
+        /// <summary>
+        /// Configures persistence for messaging components such as Outbox and Saga state.
+        /// </summary>
+        /// <typeparam name="TContext">Database context type.</typeparam>
+        /// <param name="configure">Persistence configuration.</param>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Enables durable storage using a database provider such as Entity Framework.
+        /// </remarks>
         public static NuntiumBusBuilder UseEfCorePersistence<TDbContext>(this NuntiumBusBuilder builder, Action<DbContextOptionsBuilder> configure)
             where TDbContext : NuntiumDbContext
         {

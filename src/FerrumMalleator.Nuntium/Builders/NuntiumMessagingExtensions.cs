@@ -20,6 +20,23 @@ namespace FerrumMalleator.Nuntium.Builders
 {
     public static class NuntiumMessagingExtensions
     {
+        /// <summary>
+        /// Registers and configures the Nuntium messaging pipeline.
+        /// </summary>
+        /// <param name="configure">Configuration delegate for the messaging bus.</param>
+        /// <returns>The updated service collection.</returns>
+        /// <remarks>
+        /// This is the entry point for configuring messaging features such as transport,
+        /// retry policies, outbox, sagas and consumers.
+        /// </remarks>
+        /// <example>
+        /// builder.Services.AddNuntium(bus =>
+        /// {
+        ///     bus.UseKafka(...)
+        ///        .UseOutbox()
+        ///        .AddConsumer&lt;PedidoConsumer, PedidoCriado&gt;();
+        /// });
+        /// </example>
         public static IServiceCollection AddNuntium(this IServiceCollection services, Action<NuntiumBusBuilder> configure)
         {
             var builder = new NuntiumBusBuilder(services);
@@ -48,6 +65,15 @@ namespace FerrumMalleator.Nuntium.Builders
             return builder;
         }
 
+        /// <summary>
+        /// Configures retry behavior for message processing.
+        /// </summary>
+        /// <param name="configure">Retry policy configuration.</param>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Defines how failed message processing should be retried,
+        /// including delay strategy and number of attempts.
+        /// </remarks>
         public static NuntiumBusBuilder UseRetry(this NuntiumBusBuilder builder, Action<RetryPolicyOptions> configure)
         {
             configure(builder.RetryPolicy);
@@ -56,6 +82,13 @@ namespace FerrumMalleator.Nuntium.Builders
             return builder;
         }
 
+        /// <summary>
+        /// Enables Saga support for long-running workflows.
+        /// </summary>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Allows coordination of distributed processes using stateful handlers.
+        /// </remarks>
         public static NuntiumBusBuilder AddSaga(this NuntiumBusBuilder builder, Action<SagaOptions>? configure = null)
         {
             builder.MessagingOptions.EnableSaga = true;
@@ -68,6 +101,15 @@ namespace FerrumMalleator.Nuntium.Builders
             return builder;
         }
 
+        /// <summary>
+        /// Enables the Outbox pattern to guarantee reliable message delivery.
+        /// </summary>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Messages are first persisted and later dispatched asynchronously,
+        /// ensuring consistency between database operations and message publishing.
+        /// Highly recommended for production environments.
+        /// </remarks>
         public static NuntiumBusBuilder UseOutbox(this NuntiumBusBuilder builder)
         {
             builder.MessagingOptions.EnableOutbox = true;
@@ -83,6 +125,15 @@ namespace FerrumMalleator.Nuntium.Builders
             return builder;
         }
 
+        /// <summary>
+        /// Configures Kafka as the message transport.
+        /// </summary>
+        /// <param name="configure">Kafka configuration options.</param>
+        /// <returns>The bus builder instance.</returns>
+        /// <remarks>
+        /// Enables publishing and consuming messages through Kafka.
+        /// This is recommended for production scenarios.
+        /// </remarks>
         public static NuntiumBusBuilder UseKafka(this NuntiumBusBuilder builder, Action<KafkaOptions> configure)
         {
             builder.Services.Configure(configure);
