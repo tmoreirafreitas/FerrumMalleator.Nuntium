@@ -81,5 +81,26 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
 
             admin.CreateTopicsCalled.Should().BeFalse();
         }
+
+        [Fact]
+        public async Task Should_ignore_when_topic_already_exists()
+        {
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("topic1", "group");
+
+            var admin = new FakeKafkaAdminClient
+            {
+                ThrowAlreadyExists = true
+            };
+
+            var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
+
+            var act = async () => await provisioner.ProvisionAsync(CancellationToken.None);
+
+            await act.Should().NotThrowAsync();
+
+            admin.CreateTopicsCalled.Should().BeTrue();
+        }
     }
 }

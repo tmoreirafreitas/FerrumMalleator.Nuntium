@@ -13,6 +13,8 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
 
         public Task CreateTopicsAsync(IEnumerable<TopicSpecification> topics)
         {
+            CreateTopicsCalled = true;
+
             if (ThrowOtherError)
             {
                 throw new CreateTopicsException(new List<CreateTopicReport>
@@ -28,8 +30,7 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
                     new() { Error = new Error(ErrorCode.TopicAlreadyExists) }
                 });
             }
-
-            CreateTopicsCalled = true;
+            
             CreatedTopics.AddRange(topics);
             return Task.CompletedTask;
         }
