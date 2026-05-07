@@ -17,7 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.Text.Json;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Outbox
 {
     public class OutboxProcessorTests
     {
@@ -236,6 +236,136 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()),
                 Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task Should_ignore_when_no_pending_messages()
+        {
+            var services = new ServiceCollection();
+
+            var store = new Mock<IOutboxStore>();
+
+            store.Setup(x =>
+                    x.GetPendingAsync(
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+            var registry = new MessageMetadataRegistry();
+
+            services.AddSingleton(store.Object);
+
+            services.AddSingleton(registry);
+
+            services.AddSingleton<IMessageTransport, InMemoryTransport>();
+
+            services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
+
+            var provider = services.BuildServiceProvider();
+
+            var processor = new OutboxProcessor(provider);
+
+            await processor.ProcessOnceAsync(CancellationToken.None);
+
+            store.Verify(
+                x => x.GetPendingAsync(
+                    It.IsAny<int>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Should_throw_when_message_metadata_not_found()
+        {
+            var services = new ServiceCollection();
+
+            var store = new Mock<IOutboxStore>();
+
+            var registry = new MessageMetadataRegistry();
+
+            var msg = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                Type = "invalid-message",
+                Payload = "{}"
+            };
+
+            store.Setup(x =>
+                    x.GetPendingAsync(
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync([msg]);
+
+            services.AddSingleton(store.Object);
+
+            services.AddSingleton(registry);
+
+            services.AddSingleton<IMessageTransport, InMemoryTransport>();
+
+            services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
+
+            var provider = services.BuildServiceProvider();
+
+            var processor = new OutboxProcessor(provider);
+
+            var act = async () => await processor.ProcessOnceAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        [Fact]
+        public async Task Should_throw_when_deadletter_publish_fails()
+        {
+            var services = new ServiceCollection();
+
+            var store = new Mock<IOutboxStore>();
+
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("test", "group");
+
+            registry.Register<DeadLetterMessage>("dlq", "group");
+
+            var envelope = new MessageEnvelope<TestMessage>
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = registry.Get<TestMessage>().Key,
+                Payload = new TestMessage(Guid.NewGuid())
+            };
+
+            var msg = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                Type = registry.Get<TestMessage>().Key,
+                Payload = JsonSerializer.Serialize(envelope)
+            };
+
+            store.Setup(x =>
+                    x.GetPendingAsync(
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync([msg]);
+
+            var transport = new FakeTransport
+            {
+                Throw = true
+            };
+
+            services.AddSingleton(store.Object);
+
+            services.AddSingleton(registry);
+
+            services.AddSingleton<IMessageTransport>(transport);
+
+            services.AddSingleton<IRetryExecutor, FailingRetryExecutor>();
+
+            var provider = services.BuildServiceProvider();
+
+            var processor = new OutboxProcessor(provider);
+
+            var act = async () => await processor.ProcessOnceAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<Exception>();
         }
     }
 }
