@@ -1,15 +1,18 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions;
 using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Builders;
+using FerrumMalleator.Nuntium.Diagnostics;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
 using FerrumMalleator.Nuntium.Messaging.Models;
 using FerrumMalleator.Nuntium.Sagas.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace FerrumMalleator.Nuntium.Dispatching
 {
-    internal sealed class MessageDispatcher(IServiceProvider provider,
+    internal sealed class MessageDispatcher(
+        IServiceProvider provider,
         MessageMetadataRegistry messageTypeRegistry,
         ConsumerInvokerRegistry consumerInvokerRegistry,
         SagaHandlerRegistry? sagaRegistry = null)
@@ -21,71 +24,124 @@ namespace FerrumMalleator.Nuntium.Dispatching
 
         public async Task DispatchAsync(string json, CancellationToken ct)
         {
+            var start = Stopwatch.GetTimestamp();
+
             var meta = JsonSerializer.Deserialize<BaseEnvelope>(json);
 
-            var metadata = _messageTypeRegistry.Get(meta!.MessageType);
-            var messageType = metadata.Type;
+            using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.message.dispatch", ActivityKind.Consumer);
 
-            var envelopeType = typeof(MessageEnvelope<>).MakeGenericType(messageType);
+            activity?.SetTag("messaging.system", "nuntium");
+            activity?.SetTag("messaging.operation", "process");
+            activity?.SetTag("messaging.message_type", meta?.MessageType);
+            activity?.SetTag("messaging.message_id", meta?.MessageId);
 
-            var envelope = JsonSerializer.Deserialize(json, envelopeType);
+            try
+            {
+                var metadata = _messageTypeRegistry.Get(meta!.MessageType);
+                var messageType = metadata.Type;
 
-            var payloadProperty = envelopeType.GetProperty("Payload")!;
-            var rawPayload = payloadProperty.GetValue(envelope)!;
+                activity?.SetTag("messaging.destination.name", metadata.Key);
 
-            object payload = rawPayload is JsonElement jsonElement
-                ? jsonElement.Deserialize(messageType, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                })!
-                : rawPayload;
+                var envelopeType = typeof(MessageEnvelope<>).MakeGenericType(messageType);
 
-            var retry = _provider.GetRequiredService<IRetryExecutor>();
-            var transport = _provider.GetRequiredService<IMessageTransport>();
-            var registry = _provider.GetRequiredService<MessageMetadataRegistry>();
+                var envelope = JsonSerializer.Deserialize(json, envelopeType);
 
-            await retry.ExecuteAsync(
-                async () =>
-                {
-                    if (_consumerInvokerRegistry.HasHandler(messageType))
+                var payloadProperty = envelopeType.GetProperty("Payload")!;
+
+                var rawPayload = payloadProperty.GetValue(envelope)!;
+
+                object payload = rawPayload is JsonElement jsonElement
+                        ? jsonElement.Deserialize(
+                            messageType,
+                            new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            })!
+                        : rawPayload;
+
+                var retry = _provider.GetRequiredService<IRetryExecutor>();
+
+                var transport = _provider.GetRequiredService<IMessageTransport>();
+
+                var registry = _provider.GetRequiredService<MessageMetadataRegistry>();
+
+                await retry.ExecuteAsync(
+                    async () =>
                     {
-                        await _consumerInvokerRegistry.Invoke(messageType, _provider, payload, ct);
-                    }
+                        if (_consumerInvokerRegistry.HasHandler(messageType))
+                        {
+                            activity?.AddEvent(new ActivityEvent("consumer.dispatch"));
 
-                    if (_sagaRegistry != null && _sagaRegistry.Contains(messageType))
+                            await _consumerInvokerRegistry.Invoke(messageType, _provider, payload, ct);
+                        }
+
+                        if (_sagaRegistry != null && _sagaRegistry.Contains(messageType))
+                        {
+                            activity?.AddEvent(new ActivityEvent("saga.dispatch"));
+
+                            var sagaDispatcher = _provider.GetRequiredService<SagaDispatcher>();
+
+                            await sagaDispatcher.DispatchAsync((IMessageEnvelope)envelope!, messageType, payload, ct);
+                        }
+
+                        NuntiumDiagnostics.MessagesDispatched.Add(1);
+                    },
+                    async (ex, retryCount) =>
                     {
-                        var sagaDispatcher = _provider.GetRequiredService<SagaDispatcher>();
+                        activity?.AddEvent(new ActivityEvent("message.retry", tags: new ActivityTagsCollection { { "retry.count", retryCount } }));
 
-                        await sagaDispatcher.DispatchAsync((IMessageEnvelope)envelope!, messageType, payload, ct);
-                    }
-                },
-                async (ex, retryCount) =>
-                {
-                    var baseEnvelope = (IMessageEnvelope)envelope!;
+                        activity?.SetStatus(ActivityStatusCode.Error);
 
-                    var dlqMessage = new DeadLetterMessage
-                    {
-                        MessageId = baseEnvelope.MessageId,
-                        MessageType = baseEnvelope.MessageType,
-                        PayloadJson = json,
-                        Error = ex.Message,
-                        StackTrace = ex.StackTrace ?? string.Empty,
-                        RetryCount = retryCount
-                    };
+                        activity?.AddException(ex);
 
-                    var dlqMetadata = registry.Get<DeadLetterMessage>();
+                        var baseEnvelope = (IMessageEnvelope)envelope!;
 
-                    var dlqEnvelope = new MessageEnvelope<DeadLetterMessage>
-                    {
-                        MessageId = Guid.NewGuid(),
-                        MessageType = dlqMetadata.Key,
-                        Payload = dlqMessage
-                    };
+                        var dlqMessage = new DeadLetterMessage
+                        {
+                            MessageId = baseEnvelope.MessageId,
+                            MessageType = baseEnvelope.MessageType,
+                            PayloadJson = json,
+                            Error = ex.Message,
+                            StackTrace = ex.StackTrace ?? string.Empty,
+                            RetryCount = retryCount
+                        };
 
-                    var dlqJson = JsonSerializer.Serialize(dlqEnvelope);
+                        var dlqMetadata = registry.Get<DeadLetterMessage>();
 
-                    await transport.SendAsync(dlqMetadata.Key, dlqJson, ct);
-                });
+                        var dlqEnvelope = new MessageEnvelope<DeadLetterMessage>
+                        {
+                            MessageId = Guid.NewGuid(),
+                            MessageType = dlqMetadata.Key,
+                            Payload = dlqMessage
+                        };
+
+                        var dlqJson = JsonSerializer.Serialize(dlqEnvelope);
+
+                        activity?.AddEvent(new ActivityEvent("message.deadlettered"));
+
+                        NuntiumDiagnostics.MessagesDeadlettered.Add(1);
+
+                        await transport.SendAsync(dlqMetadata.Key, dlqJson, ct);
+                    });
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error);
+
+                activity?.AddException(ex);
+
+                NuntiumDiagnostics.MessagesFailed.Add(1);
+
+                throw;
+            }
+            finally
+            {
+                var elapsed = Stopwatch.GetElapsedTime(start);
+
+                NuntiumDiagnostics.DispatchDuration.Record(elapsed.TotalMilliseconds);
+            }
         }
     }
 }
