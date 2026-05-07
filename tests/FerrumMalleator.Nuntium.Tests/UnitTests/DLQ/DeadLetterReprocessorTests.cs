@@ -6,8 +6,9 @@ using FerrumMalleator.Nuntium.Persistence.InMemory;
 using FerrumMalleator.Nuntium.Tests.Fake;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Outbox
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
 {
     public class DeadLetterReprocessorTests
     {
@@ -159,6 +160,71 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Outbox
             await reprocessor.ProcessOnceAsync(CancellationToken.None);
 
             transport.Sent.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task Should_mark_message_as_reprocessed()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
+
+            var transport = new FakeTransport
+            {
+                Throw = false
+            };
+
+            services.AddSingleton<IMessageTransport>(transport);
+
+            var provider = services.BuildServiceProvider();
+
+            using var scope = provider.CreateScope();
+
+            var store = scope.ServiceProvider.GetRequiredService<IDeadLetterStore>();
+
+            var message = new DeadLetterMessage
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = "test",
+                PayloadJson = "{}",
+                ReprocessCount = 0
+            };
+
+            await store.AddAsync(message, CancellationToken.None);
+
+            var reprocessor = new DeadLetterReprocessor(provider);
+
+            await reprocessor.ProcessOnceAsync(CancellationToken.None);
+
+            var pending = await store.GetPendingAsync(10, CancellationToken.None);
+
+            pending.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Should_throw_when_store_fails()
+        {
+            var services = new ServiceCollection();
+
+            var store = new Mock<IDeadLetterStore>();
+
+            store.Setup(x =>
+                    x.GetPendingAsync(
+                        It.IsAny<int>(),
+                        It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("store failed"));
+
+            services.AddSingleton(store.Object);
+
+            services.AddSingleton<IMessageTransport>(new FakeTransport());
+
+            var provider = services.BuildServiceProvider();
+
+            var reprocessor = new DeadLetterReprocessor(provider);
+
+            var act = async () => await reprocessor.ProcessOnceAsync(CancellationToken.None);
+
+            await act.Should().ThrowAsync<Exception>().WithMessage("store failed");
         }
     }
 }

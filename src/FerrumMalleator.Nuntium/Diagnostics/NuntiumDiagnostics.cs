@@ -4,7 +4,6 @@ using System.Diagnostics.Metrics;
 
 namespace FerrumMalleator.Nuntium.Diagnostics
 {
-    [ExcludeFromCodeCoverage]
     internal static class NuntiumDiagnostics
     {
         public static readonly ActivitySource ActivitySource = new("FerrumMalleator.Nuntium");
