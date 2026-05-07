@@ -30,7 +30,7 @@ public class MessageMetadataRegistryTests
 
         var metadata = registry.Get("TestMessage");
 
-        metadata.Type.Should().Be(typeof(TestMessage));
+        metadata.Type.Should().Be<TestMessage>();
     }
 
     [Fact]

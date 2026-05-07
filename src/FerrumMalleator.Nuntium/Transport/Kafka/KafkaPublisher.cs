@@ -13,7 +13,6 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 {
     internal sealed class KafkaPublisher : IMessagePublisher, IMessageTransport, IDisposable
     {
-        private readonly IKafkaProducerFactory _factory;
         private readonly IProducer<string, string> _producer;
         private readonly ITopicResolver _topicResolver;
         private readonly MessageMetadataRegistry _messageTypeRegistry;
@@ -32,7 +31,6 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
             MessageMetadataRegistry messageTypeRegistry, 
             IKafkaProducerFactory factory)
         {
-            _factory = factory;
             _topicResolver = topicResolver;
             _messageTypeRegistry = messageTypeRegistry;
 
@@ -45,7 +43,7 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 
             try
             {
-                _producer = _factory.Create(producerConfig);
+                _producer = factory.Create(producerConfig);
             }
             catch (Exception ex)
             {

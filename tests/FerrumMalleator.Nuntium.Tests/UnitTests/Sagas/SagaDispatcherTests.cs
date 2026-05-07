@@ -95,6 +95,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
             state!.Executed.Should().BeTrue();
         }
 
+
         [Fact]
         public async Task Should_ignore_when_no_saga_registered()
         {
@@ -115,16 +116,16 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
 
             services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
             services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+
             services.AddSingleton<ISagaRepository<TestState>, InMemorySagaRepository<TestState>>();
+
             services.AddSingleton<IMessageTransport, InMemoryTransport>();
 
             var provider = services.BuildServiceProvider();
 
-            var dispatcher = new MessageDispatcher(
-                provider,
-                registry,
-                consumerRegistry,
-                null);
+            var dispatcher = new MessageDispatcher(provider, registry, consumerRegistry, null);
+
+            var correlationId = Guid.NewGuid();
 
             var metadata = registry.Get<TestMessage>();
 
@@ -132,12 +133,18 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
             {
                 MessageId = Guid.NewGuid(),
                 MessageType = metadata.Key,
-                Payload = new TestMessage(Guid.NewGuid())
+                Payload = new TestMessage(correlationId)
             };
 
             var json = JsonSerializer.Serialize(envelope);
 
             await dispatcher.DispatchAsync(json, CancellationToken.None);
+
+            var repository = provider.GetRequiredService<ISagaRepository<TestState>>();
+
+            var state = await repository.GetAsync(correlationId, CancellationToken.None);
+
+            state.Should().BeNull();
         }
 
         [Fact]
@@ -164,7 +171,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
             await dispatcher.DispatchAsync(envelope, typeof(TestMessage), envelope.Payload!, CancellationToken.None);
 
             idempotency.Verify(x => x.MarkProcessedAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        }        
+        }
 
         private static (SagaDispatcher, MessageMetadata) BuildDispatcher(Type? saga = null, IMessageTransport? transport = null, IIdempotencyStore? idempotency = null)
         {
@@ -192,7 +199,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
             else
                 services.AddScoped<ISagaHandler<TestMessage, TestState>, TestSaga>();
 
-            var provider = services.BuildServiceProvider();            
+            var provider = services.BuildServiceProvider();
 
             var metadata = registry.Get<TestMessage>();
             var dispatcher = new SagaDispatcher(

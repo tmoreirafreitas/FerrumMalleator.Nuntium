@@ -3,7 +3,6 @@ using FerrumMalleator.Nuntium.Diagnostics;
 using FerrumMalleator.Nuntium.Dispatching;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
 namespace FerrumMalleator.Nuntium.Transport.Kafka
@@ -18,21 +17,17 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
         {
             using var externalScope = _provider.CreateScope();
 
-            var loggerFactory = externalScope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-
-            var logger = loggerFactory.CreateLogger<KafkaConsumerWorker>();
-
             var consumer = externalScope.ServiceProvider.GetRequiredService<IKafkaConsumer>();
 
             consumer.Subscribe(_topics);
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                await ProcessOnceAsync(consumer, logger, stoppingToken);
+                await ProcessOnceAsync(consumer, stoppingToken);
             }
         }
 
-        public async Task ProcessOnceAsync(IKafkaConsumer consumer, ILogger logger, CancellationToken stoppingToken)
+        public async Task ProcessOnceAsync(IKafkaConsumer consumer, CancellationToken stoppingToken)
         {
             using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.kafka.consume", ActivityKind.Consumer);
 
@@ -63,8 +58,6 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 
                 var dispatcher = scope.ServiceProvider.GetRequiredService<MessageDispatcher>();
 
-                logger?.LogDebug(@"Processing message {Topic} {Offset}", result.Topic, result.Offset);
-
                 await dispatcher.DispatchAsync(result.Message.Value!, stoppingToken);
 
                 consumer?.Commit(result);
@@ -82,8 +75,6 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
                 activity?.AddException(ex);
 
                 NuntiumDiagnostics.KafkaConsumeFailures.Add(1);
-
-                logger?.LogError(ex, "Kafka error ({GroupId}): {ErrorReason}", _groupId, ex.Error.Reason);
             }
             catch (OperationCanceledException)
             {
@@ -96,8 +87,6 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
                 activity?.AddException(ex);
 
                 NuntiumDiagnostics.KafkaCommitFailures.Add(1);
-
-                logger?.LogError(ex, "Erro geral ({GroupId}): {Message}", _groupId, ex.Message);
             }
             finally
             {

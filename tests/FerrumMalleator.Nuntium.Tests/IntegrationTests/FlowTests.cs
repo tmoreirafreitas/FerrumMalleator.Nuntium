@@ -13,8 +13,8 @@ public class FlowTests
 
     public class PedidoConsumer : IMessageConsumer<Pedido>
     {
-        public static bool Received;
-
+        public static bool Received { get; private set; }
+        public static void Reset() { Received = false; }
         public Task ConsumeAsync(Pedido message, CancellationToken ct)
         {
             Received = true;
@@ -26,7 +26,7 @@ public class FlowTests
     [Fact]
     public async Task Should_publish_and_consume_message()
     {
-        PedidoConsumer.Received = false;
+        PedidoConsumer.Reset();
 
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
@@ -43,11 +43,21 @@ public class FlowTests
 
         await host.StartAsync();
 
-        var publisher = host.Services.GetRequiredService<IMessagePublisher>();
+        var publisher =
+            host.Services.GetRequiredService<IMessagePublisher>();
 
-        await publisher.PublishAsync(new Pedido(Guid.NewGuid()));
+        await publisher.PublishAsync(
+            new Pedido(Guid.NewGuid()));
 
-        await Task.Delay(1500);
+        var timeout = TimeSpan.FromSeconds(10);
+
+        var start = DateTime.UtcNow;
+
+        while (!PedidoConsumer.Received &&
+               DateTime.UtcNow - start < timeout)
+        {
+            await Task.Delay(100);
+        }
 
         PedidoConsumer.Received.Should().BeTrue();
 

@@ -21,6 +21,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
         private readonly SagaHandlerRegistry? _sagaRegistry = sagaRegistry;
         private readonly MessageMetadataRegistry _messageTypeRegistry = messageTypeRegistry;
         private readonly ConsumerInvokerRegistry _consumerInvokerRegistry = consumerInvokerRegistry;
+        private static readonly JsonSerializerOptions JsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
 
         public async Task DispatchAsync(string json, CancellationToken ct)
         {
@@ -51,12 +52,7 @@ namespace FerrumMalleator.Nuntium.Dispatching
                 var rawPayload = payloadProperty.GetValue(envelope)!;
 
                 object payload = rawPayload is JsonElement jsonElement
-                        ? jsonElement.Deserialize(
-                            messageType,
-                            new JsonSerializerOptions
-                            {
-                                PropertyNameCaseInsensitive = true
-                            })!
+                        ? jsonElement.Deserialize(messageType, JsonSerializerOptions)!
                         : rawPayload;
 
                 var retry = _provider.GetRequiredService<IRetryExecutor>();

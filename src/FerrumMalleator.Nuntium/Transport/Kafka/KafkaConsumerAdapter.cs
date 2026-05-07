@@ -8,22 +8,21 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
     [ExcludeFromCodeCoverage]
     internal sealed class KafkaConsumerAdapter : IKafkaConsumer, IDisposable
     {
-        private readonly KafkaOptions _options;
         private readonly IConsumer<string, string> _inner;
         public KafkaConsumerAdapter(IOptions<KafkaOptions> options, string groupId)
         {
             if (options.Value == null)
-                throw new ArgumentNullException(nameof(options.Value));
+                throw new ArgumentNullException(nameof(options));
 
-            _options = options.Value;
+            var localOptions = options.Value;
 
             var consumerConfig = new ConsumerConfig
             {
-                BootstrapServers = _options.BootstrapServers,
+                BootstrapServers = localOptions.BootstrapServers,
                 GroupId = groupId,
             };
 
-            _options.ConsumerConfigAction?.Invoke(consumerConfig);
+            localOptions.ConsumerConfigAction?.Invoke(consumerConfig);
 
             _inner = new ConsumerBuilder<string, string>(consumerConfig).Build();
         }

@@ -76,7 +76,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
 
             var worker = new KafkaConsumerWorker(provider, "group", ["test"]);
 
-            await worker.ProcessOnceAsync(fakeConsumer, NullLogger.Instance, CancellationToken.None);
+            await worker.ProcessOnceAsync(fakeConsumer, CancellationToken.None);
 
             TestConsumer.Called.Should().BeTrue();
             fakeConsumer.CommitCalled.Should().BeTrue();
@@ -97,11 +97,8 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
                 Throw = true
             };
 
-            var logger = new FakeLogger();
-
-            await worker.ProcessOnceAsync(fakeConsumer, logger, CancellationToken.None);
+            await worker.ProcessOnceAsync(fakeConsumer, CancellationToken.None);
             fakeConsumer.Throw.Should().BeTrue();
-            logger.Logs.Should().NotBeEmpty();
         }
     }
 }

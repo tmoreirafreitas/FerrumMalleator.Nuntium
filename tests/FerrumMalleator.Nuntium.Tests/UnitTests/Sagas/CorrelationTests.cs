@@ -1,6 +1,7 @@
 ﻿using FerrumMalleator.Nuntium.Abstractions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas;
 
@@ -84,6 +85,7 @@ public class CorrelationTests
         act.Should().Throw<InvalidOperationException>();
     }
 
+    [SuppressMessage("Performance", "CA1859", Justification = "Framework code should depend on abstractions.")]
     private static object ResolveCorrelationId(object message, IServiceProvider provider)
     {
         var messageType = message.GetType();

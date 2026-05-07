@@ -109,19 +109,24 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Dispatching
             act.Message.Should().NotBeNullOrEmpty();
         }
 
+
         [Fact]
         public async Task Should_not_invoke_when_no_consumer_registered()
         {
             var services = new ServiceCollection();
 
             var registry = new MessageMetadataRegistry();
+
             registry.Register<TestMessage>("test", "group");
 
-            var consumerRegistry = new ConsumerInvokerRegistry();            
+            var consumerRegistry = new ConsumerInvokerRegistry();
 
             services.AddSingleton(registry);
+
             services.AddSingleton(consumerRegistry);
+
             services.AddSingleton<IMessageTransport, InMemoryTransport>();
+
             services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
 
             var provider = services.BuildServiceProvider();
@@ -138,7 +143,10 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Dispatching
             var json = JsonSerializer.Serialize(envelope);
 
             await dispatcher.DispatchAsync(json, CancellationToken.None);
+
+            consumerRegistry.HasHandler(typeof(TestMessage)).Should().BeFalse();
         }
+
 
         [Fact]
         public async Task Should_send_to_dlq_when_handler_fails()

@@ -66,10 +66,6 @@ namespace FerrumMalleator.Nuntium.Outbox
 
                     var envelopeType = typeof(MessageEnvelope<>).MakeGenericType(messageType);
 
-                    var envelope = JsonSerializer.Deserialize(msg.Payload, envelopeType)
-                        ?? throw new InvalidOperationException(
-                            "Failed to deserialize envelope");
-
                     await retryExecutor.ExecuteAsync(
                         async () =>
                         {

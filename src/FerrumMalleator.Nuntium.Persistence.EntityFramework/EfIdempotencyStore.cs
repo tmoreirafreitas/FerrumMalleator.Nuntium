@@ -17,15 +17,15 @@ namespace FerrumMalleator.Nuntium.Persistence.EntityFramework
                     cancellation);
         }
 
-        public async Task MarkProcessedAsync(Guid messageId, CancellationToken ct = default)
+        public async Task MarkProcessedAsync(Guid messageId, CancellationToken cancellation = default)
         {
             try
             {
-                if (await _db.Set<ProcessedMessage>().AnyAsync(x => x.MessageId == messageId, ct))
+                if (await _db.Set<ProcessedMessage>().AnyAsync(x => x.MessageId == messageId, cancellation))
                     return;
 
                 _db.Add(new ProcessedMessage(messageId));
-                await _db.SaveChangesAsync(ct);
+                await _db.SaveChangesAsync(cancellation);
             }
             catch (DbUpdateException)
             {

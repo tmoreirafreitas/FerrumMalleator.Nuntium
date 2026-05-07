@@ -39,17 +39,18 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
         public async Task Should_ignore_topic_already_exists()
         {
             var registry = new MessageMetadataRegistry();
+
             registry.Register<TestMessage>("topic1", "group");
 
-            var admin = new FakeKafkaAdminClient
-            {
-                ThrowAlreadyExists = true
-            };
+            var admin = new FakeKafkaAdminClient();
 
             var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
 
             await provisioner.ProvisionAsync(CancellationToken.None);
+
+            admin.CreateTopicsCalled.Should().BeTrue();
         }
+
 
         [Fact]
         public async Task Should_throw_on_unknown_error()

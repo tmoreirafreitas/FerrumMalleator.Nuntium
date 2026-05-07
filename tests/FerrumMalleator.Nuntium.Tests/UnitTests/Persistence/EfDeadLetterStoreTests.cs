@@ -13,7 +13,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Persistence
 
         }
 
-        private static NuntiumDbContext CreateDb()
+        private static TestDbContext CreateDb()
         {
             var options = new DbContextOptionsBuilder<TestDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())

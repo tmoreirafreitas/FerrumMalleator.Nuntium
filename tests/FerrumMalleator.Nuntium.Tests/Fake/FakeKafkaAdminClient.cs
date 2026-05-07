@@ -9,25 +9,27 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
         public List<TopicSpecification> CreatedTopics = new();
         public bool ThrowAlreadyExists;
         public bool ThrowOtherError;
+        public bool CreateTopicsCalled;
 
         public Task CreateTopicsAsync(IEnumerable<TopicSpecification> topics)
         {
             if (ThrowOtherError)
             {
                 throw new CreateTopicsException(new List<CreateTopicReport>
-            {
-                new() { Error = new Error(ErrorCode.Unknown) }
-            });
+                {
+                    new() { Error = new Error(ErrorCode.Unknown) }
+                });
             }
 
             if (ThrowAlreadyExists)
             {
                 throw new CreateTopicsException(new List<CreateTopicReport>
-            {
-                new() { Error = new Error(ErrorCode.TopicAlreadyExists) }
-            });
+                {
+                    new() { Error = new Error(ErrorCode.TopicAlreadyExists) }
+                });
             }
 
+            CreateTopicsCalled = true;
             CreatedTopics.AddRange(topics);
             return Task.CompletedTask;
         }

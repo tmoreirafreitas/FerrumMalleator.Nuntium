@@ -3,62 +3,65 @@ using FerrumMalleator.Nuntium.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 
-internal sealed class ConsumerInvokerRegistry
+namespace FerrumMalleator.Nuntium.Dispatching
 {
-    private readonly Dictionary<Type, Func<IServiceProvider, object, CancellationToken, Task>> _invokers = [];
-
-    public void Register<TMessage>()
+    internal sealed class ConsumerInvokerRegistry
     {
-        _invokers[typeof(TMessage)] =
-            async (provider, payload, ct) =>
-            {
-                var consumers = provider.GetServices<IMessageConsumer<TMessage>>();
+        private readonly Dictionary<Type, Func<IServiceProvider, object, CancellationToken, Task>> _invokers = [];
 
-                foreach (var consumer in consumers)
+        public void Register<TMessage>()
+        {
+            _invokers[typeof(TMessage)] =
+                async (provider, payload, ct) =>
                 {
-                    var consumerName = consumer.GetType().Name;
-                    var messageType = typeof(TMessage).Name;
+                    var consumers = provider.GetServices<IMessageConsumer<TMessage>>();
 
-                    using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.consumer.consume", ActivityKind.Consumer);
-
-                    activity?.SetTag("messaging.system", "nuntium");
-                    activity?.SetTag("messaging.operation", "process");
-                    activity?.SetTag("messaging.message_type", messageType);
-                    activity?.SetTag("messaging.consumer", consumerName);
-
-                    var start = Stopwatch.GetTimestamp();
-
-                    try
+                    foreach (var consumer in consumers)
                     {
-                        await consumer.ConsumeAsync((TMessage)payload, ct).ConfigureAwait(false);
+                        var consumerName = consumer.GetType().Name;
+                        var messageType = typeof(TMessage).Name;
 
-                        NuntiumDiagnostics.MessagesConsumed.Add(1);
+                        using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.consumer.consume", ActivityKind.Consumer);
+
+                        activity?.SetTag("messaging.system", "nuntium");
+                        activity?.SetTag("messaging.operation", "process");
+                        activity?.SetTag("messaging.message_type", messageType);
+                        activity?.SetTag("messaging.consumer", consumerName);
+
+                        var start = Stopwatch.GetTimestamp();
+
+                        try
+                        {
+                            await consumer.ConsumeAsync((TMessage)payload, ct).ConfigureAwait(false);
+
+                            NuntiumDiagnostics.MessagesConsumed.Add(1);
+                        }
+                        catch (Exception ex)
+                        {
+                            activity?.SetStatus(ActivityStatusCode.Error);
+                            activity?.AddException(ex);
+
+                            NuntiumDiagnostics.MessagesFailed.Add(1);
+
+                            throw;
+                        }
+                        finally
+                        {
+                            var elapsed = Stopwatch.GetElapsedTime(start);
+                            NuntiumDiagnostics.ConsumerDuration.Record(elapsed.TotalMilliseconds);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        activity?.SetStatus(ActivityStatusCode.Error);
-                        activity?.AddException(ex);
+                };
+        }
 
-                        NuntiumDiagnostics.MessagesFailed.Add(1);
+        public Task Invoke(Type type, IServiceProvider provider, object payload, CancellationToken ct)
+        {
+            return _invokers[type](provider, payload, ct);
+        }
 
-                        throw;
-                    }
-                    finally
-                    {
-                        var elapsed = Stopwatch.GetElapsedTime(start);
-                        NuntiumDiagnostics.ConsumerDuration.Record(elapsed.TotalMilliseconds);
-                    }
-                }
-            };
-    }
-
-    public Task Invoke(Type type, IServiceProvider provider, object payload, CancellationToken ct)
-    {
-        return _invokers[type](provider, payload, ct);
-    }
-
-    public bool HasHandler(Type type)
-    {
-        return _invokers.ContainsKey(type);
+        public bool HasHandler(Type type)
+        {
+            return _invokers.ContainsKey(type);
+        }
     }
 }
