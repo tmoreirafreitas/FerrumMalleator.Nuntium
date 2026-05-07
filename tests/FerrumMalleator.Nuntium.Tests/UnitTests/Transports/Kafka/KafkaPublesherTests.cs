@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
 {
     public class KafkaPublesherTests
     {
@@ -147,6 +147,101 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports
 
             act.Should().Throw<InvalidOperationException>()
                .WithMessage("*Failed to initialize Kafka producer*");
+        }
+
+        [Fact]
+        public async Task Should_use_custom_partition_key()
+        {
+            var producer = new Mock<IProducer<string, string>>();
+
+            producer
+                .Setup(x => x.ProduceAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Message<string, string>>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DeliveryResult<string, string>());
+
+            var resolver = new Mock<ITopicResolver>();
+
+            resolver.Setup(x => x.Resolve<TestMessage>())
+                .Returns("test-topic");
+
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("test-key", "group", x => ((TestMessage)x).Id.ToString());
+
+            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+
+            var message = new TestMessage(Guid.NewGuid());
+
+            await publisher.PublishAsync(message);
+
+            producer.Verify(x =>
+                x.ProduceAsync(
+                    "test-topic",
+                    It.Is<Message<string, string>>(m =>
+                        m.Key == message.Id.ToString()),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Should_throw_when_transport_send_fails()
+        {
+            var producer = new Mock<IProducer<string, string>>();
+
+            producer
+                .Setup(x => x.ProduceAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Message<string, string>>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("transport failed"));
+
+            var resolver = new Mock<ITopicResolver>();
+
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("test-key", "group");
+
+            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+
+            var metadata = registry.Get<TestMessage>();
+
+            var act = async () => await publisher.SendAsync(metadata.Key, "{}", CancellationToken.None);
+
+            await act.Should().ThrowAsync<Exception>().WithMessage("transport failed");
+        }
+
+        [Fact]
+        public async Task Should_throw_when_transport_metadata_not_found()
+        {
+            var producer = new Mock<IProducer<string, string>>();
+
+            var resolver = new Mock<ITopicResolver>();
+
+            var registry = new MessageMetadataRegistry();
+
+            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+
+            var act = async () => await publisher.SendAsync("invalid-message", "{}", CancellationToken.None);
+
+            await act.Should().ThrowAsync<KeyNotFoundException>();
+        }
+
+        [Fact]
+        public void Should_ignore_multiple_dispose()
+        {
+            var producer = new Mock<IProducer<string, string>>();
+
+            var publisher = new KafkaPublisher(producer.Object, Mock.Of<ITopicResolver>(), new MessageMetadataRegistry());
+
+            publisher.Dispose();
+
+            publisher.Dispose();
+
+            producer.Verify(x => x.Flush(It.IsAny<TimeSpan>()), Times.Once);
+
+            producer.Verify(x => x.Dispose(), Times.Once);
         }
     }
 }

@@ -1,7 +1,9 @@
-﻿using FerrumMalleator.Nuntium.Abstractions;
+﻿using Confluent.Kafka.Admin;
+using FerrumMalleator.Nuntium.Abstractions;
 using FerrumMalleator.Nuntium.Abstractions.Persistence;
 using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Builders;
+using FerrumMalleator.Nuntium.Configuration;
 using FerrumMalleator.Nuntium.Dispatching;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
 using FerrumMalleator.Nuntium.Messaging.Models;
@@ -12,6 +14,7 @@ using FerrumMalleator.Nuntium.Transport.InMemory;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using System.Reflection;
 using System.Text.Json;
 
 namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
@@ -211,6 +214,157 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Sagas
                 registry);
 
             return (dispatcher, metadata!);
+        }
+
+        [Fact]
+        public async Task Should_send_to_dlq_when_saga_fails()
+        {
+            var transport = new Mock<IMessageTransport>();
+
+            var services = new ServiceCollection();
+
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("test", "group");
+
+            registry.Register<DeadLetterMessage>("dlq", "group");
+
+            var sagaRegistry = new SagaHandlerRegistry();
+
+            sagaRegistry.Register<TestMessage, TestState>();
+
+            services.AddSingleton(registry);
+
+            services.AddSingleton(sagaRegistry);
+
+            services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+
+            services.AddSingleton<ISagaRepository<TestState>, InMemorySagaRepository<TestState>>();
+
+            services.AddSingleton(transport.Object);
+
+            services.AddSingleton<IRetryExecutor>(new RetryExecutor(
+                    new RetryPolicyOptions
+                    {
+                        MaxAttempts = 1,
+                        Delays = []
+                    }));
+
+            services.AddScoped<ISagaHandler<TestMessage, TestState>, FailingSaga>();
+
+            var provider = services.BuildServiceProvider();
+
+            var dispatcher = new SagaDispatcher(
+                    provider,
+                    sagaRegistry,
+                    provider.GetRequiredService<IIdempotencyStore>(),
+                    provider.GetRequiredService<IRetryExecutor>(),
+                    transport.Object,
+                    registry);
+
+            var metadata = registry.Get<TestMessage>();
+
+            var envelope = new MessageEnvelope<TestMessage>
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = metadata.Key,
+                Payload = new TestMessage(Guid.NewGuid())
+            };
+
+            await Assert.ThrowsAsync<Exception>(() => dispatcher.DispatchAsync(envelope, typeof(TestMessage), envelope.Payload!, CancellationToken.None));
+
+            transport.Verify(
+                x => x.SendAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task Should_load_existing_saga_state()
+        {
+            var (dispatcher, metadata) = BuildDispatcher(typeof(TestSaga));
+
+            var correlationId = Guid.NewGuid();
+
+            var repository =
+                dispatcher.GetType()
+                    .GetField("_provider",
+                        BindingFlags.NonPublic |
+                        BindingFlags.Instance)!
+                    .GetValue(dispatcher) as IServiceProvider;
+
+            var sagaRepository = repository!.GetRequiredService<ISagaRepository<TestState>>();
+
+            await sagaRepository.SaveAsync(new TestState
+            {
+                CorrelationId = correlationId,
+                Executed = false
+            },
+                CancellationToken.None);
+
+            var envelope = new MessageEnvelope<TestMessage>
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = metadata.Key,
+                Payload = new TestMessage(correlationId)
+            };
+
+            await dispatcher.DispatchAsync(envelope, typeof(TestMessage), envelope.Payload!, CancellationToken.None);
+
+            var state = await sagaRepository.GetAsync(correlationId, CancellationToken.None);
+
+            state.Should().NotBeNull();
+
+            state!.Executed.Should().BeTrue();
+        }
+
+        private record InvalidMessage(string Name);
+
+        [Fact]
+        public async Task Should_throw_when_no_correlation_id_found()
+        {
+            var services = new ServiceCollection();
+
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<InvalidMessage>("test", "group");
+
+            registry.Register<DeadLetterMessage>("dlq", "group");
+
+            var sagaRegistry = new SagaHandlerRegistry();
+
+            services.AddSingleton(registry);
+
+            services.AddSingleton(sagaRegistry);
+
+            services.AddSingleton<IIdempotencyStore, InMemoryIdempotencyStore>();
+
+            services.AddSingleton<IRetryExecutor, NoOpRetryExecutor>();
+
+            services.AddSingleton<IMessageTransport, InMemoryTransport>();
+
+            var provider = services.BuildServiceProvider();
+
+            var dispatcher = new SagaDispatcher(
+                    provider,
+                    sagaRegistry,
+                    provider.GetRequiredService<IIdempotencyStore>(),
+                    provider.GetRequiredService<IRetryExecutor>(),
+                    provider.GetRequiredService<IMessageTransport>(),
+                    registry);
+
+            var envelope = new MessageEnvelope<InvalidMessage>
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = "test",
+                Payload = new InvalidMessage("invalid")
+            };
+
+            var act = async () => await dispatcher.DispatchAsync(envelope, typeof(InvalidMessage), envelope.Payload!, CancellationToken.None);
+
+            await act.Should().ThrowAsync<Exception>();
         }
     }
 }

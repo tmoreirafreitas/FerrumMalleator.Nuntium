@@ -50,8 +50,7 @@ namespace FerrumMalleator.Nuntium.Sagas.Handlers
 
                 LoadState = async (provider, correlationId, ct) =>
                 {
-                    using var activity =
-                        NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.saga.state.load", ActivityKind.Internal);
+                    using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.saga.state.load", ActivityKind.Internal);
 
                     activity?.SetTag("saga.correlation_id", correlationId);
 

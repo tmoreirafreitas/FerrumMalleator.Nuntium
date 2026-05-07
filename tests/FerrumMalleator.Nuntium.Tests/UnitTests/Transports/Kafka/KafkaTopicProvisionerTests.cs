@@ -6,7 +6,7 @@ using FerrumMalleator.Nuntium.Transport.Kafka;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 
-namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
+namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
 {
     public class KafkaTopicProvisionerTests
     {
@@ -66,6 +66,20 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Processors
             var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
 
             await Assert.ThrowsAsync<CreateTopicsException>(() => provisioner.ProvisionAsync(CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task Should_ignore_when_no_topics_registered()
+        {
+            var registry = new MessageMetadataRegistry();
+
+            var admin = new FakeKafkaAdminClient();
+
+            var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
+
+            await provisioner.ProvisionAsync(CancellationToken.None);
+
+            admin.CreateTopicsCalled.Should().BeFalse();
         }
     }
 }
