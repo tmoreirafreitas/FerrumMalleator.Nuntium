@@ -58,7 +58,6 @@ jobs:
             /d:sonar.qualitygate.wait=true `
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/samples/**,**/examples/**,**/.github/**,**/*.yml,**/*.yaml,**/*.csproj,**/*.md" `
             /d:sonar.coverage.exclusions="**/*Tests*.cs,**/tests/**,**/*.csproj,**/*.yml,**/*.yaml" `
-            /d:sonar.cpd.exclusions="**/tests/**" `
             /d:sonar.cs.opencover.reportsPaths="**\TestResults\**\coverage.opencover.xml"
 
           dotnet restore
