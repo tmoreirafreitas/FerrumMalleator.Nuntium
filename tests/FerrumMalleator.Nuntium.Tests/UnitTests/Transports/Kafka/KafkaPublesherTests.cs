@@ -2,9 +2,13 @@
 using FerrumMalleator.Nuntium.Abstractions;
 using FerrumMalleator.Nuntium.Builders;
 using FerrumMalleator.Nuntium.Configuration;
+using FerrumMalleator.Nuntium.Dispatching;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
+using FerrumMalleator.Nuntium.Retry;
+using FerrumMalleator.Nuntium.Transport.InMemory;
 using FerrumMalleator.Nuntium.Transport.Kafka;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Text.Json;
@@ -242,6 +246,6 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
             producer.Verify(x => x.Flush(It.IsAny<TimeSpan>()), Times.Once);
 
             producer.Verify(x => x.Dispose(), Times.Once);
-        }
+        }        
     }
 }

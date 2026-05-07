@@ -197,7 +197,7 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
             var act = async () => await worker.ProcessOnceAsync(fakeConsumer, CancellationToken.None);
 
             await act.Should().NotThrowAsync();
-            fakeConsumer.CommitCalled.Should().BeTrue();
+            fakeConsumer.Throw.Should().BeTrue();
         }
     }
 }
