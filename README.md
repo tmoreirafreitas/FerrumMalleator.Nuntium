@@ -367,9 +367,27 @@ Customização quando necessário
 
 ---
 
-## 🧠 Observabilidade (Roadmap)
+## ✨ Observabilidade nativa
 
-* [ ] Integração com OpenTelemetry (emissão de traces, métricas e logs)
+O Nuntium agora possui suporte nativo a OpenTelemetry:
+
+- Distributed tracing
+- Metrics
+- Kafka instrumentation
+- Saga instrumentation
+- Outbox observability
+- DeadLetter observability
+- Retry tracing
+- Semantic messaging tags
+
+Compatível com:
+- OpenTelemetry
+- Grafana
+- Jaeger
+- Prometheus
+- Seq
+- OTLP exporters  
+
 > O destino dos dados (Prometheus, Jaeger, Elastic, etc.) é definido pela aplicação.
 
 ---

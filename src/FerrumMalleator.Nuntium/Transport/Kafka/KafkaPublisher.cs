@@ -3,8 +3,10 @@ using FerrumMalleator.Nuntium.Abstractions;
 using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Builders;
 using FerrumMalleator.Nuntium.Configuration;
+using FerrumMalleator.Nuntium.Diagnostics;
 using FerrumMalleator.Nuntium.Messaging.Envelopes;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace FerrumMalleator.Nuntium.Transport.Kafka
@@ -24,7 +26,11 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
             _messageTypeRegistry = messageTypeRegistry;
         }
 
-        public KafkaPublisher(IOptions<KafkaOptions> options, ITopicResolver topicResolver, MessageMetadataRegistry messageTypeRegistry, IKafkaProducerFactory factory)
+        public KafkaPublisher(
+            IOptions<KafkaOptions> options, 
+            ITopicResolver topicResolver, 
+            MessageMetadataRegistry messageTypeRegistry, 
+            IKafkaProducerFactory factory)
         {
             _factory = factory;
             _topicResolver = topicResolver;
@@ -62,41 +68,137 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
 
         public async Task PublishAsync<T>(T message, CancellationToken ct = default)
         {
-            var messageId = Guid.NewGuid();
+            using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.kafka.publish", ActivityKind.Producer);
 
-            var topic = _topicResolver.Resolve<T>();
-            var messageType = _messageTypeRegistry.Get<T>();
-            var key = messageType.PartitionKey?.Invoke(message!) ?? messageId.ToString();
+            var start = Stopwatch.GetTimestamp();
 
-            var envelope = new MessageEnvelope<T>
+            activity?.SetTag("messaging.system", "kafka");
+
+            activity?.SetTag("messaging.operation", "publish");
+
+            activity?.SetTag("messaging.message_type", typeof(T).Name);
+
+            try
             {
-                MessageId = messageId,
-                MessageType = messageType.Key,
-                Payload = message!
-            };
+                var messageId = Guid.NewGuid();
 
-            var json = JsonSerializer.Serialize(envelope);
+                var topic = _topicResolver.Resolve<T>();
 
-            var messageProduce = new Message<string, string>
+                activity?.SetTag("messaging.destination.name", topic);
+
+                var messageType = _messageTypeRegistry.Get<T>();
+
+                var key = messageType.PartitionKey?.Invoke(message!) ?? messageId.ToString();
+
+                activity?.SetTag("messaging.kafka.message_key", key);
+
+                var envelope = new MessageEnvelope<T>
+                {
+                    MessageId = messageId,
+                    MessageType = messageType.Key,
+                    Payload = message!
+                };
+
+                activity?.SetTag("messaging.message_id", envelope.MessageId);
+
+                var json = JsonSerializer.Serialize(envelope);
+
+                var messageProduce = new Message<string, string>
+                {
+                    Key = key,
+                    Value = json
+                };
+
+                activity?.AddEvent(new ActivityEvent("kafka.message.producing"));
+
+                await _producer.ProduceAsync(topic, messageProduce, ct).ConfigureAwait(false);
+
+                activity?.AddEvent(new ActivityEvent("kafka.message.published"));
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+
+                NuntiumDiagnostics.KafkaMessagesPublished.Add(1);
+
+                NuntiumDiagnostics.MessagesPublished.Add(1);
+            }
+            catch (Exception ex)
             {
-                Key = key,
-                Value = json
-            };
+                activity?.SetStatus(ActivityStatusCode.Error);
 
-            await _producer.ProduceAsync(topic, messageProduce, ct).ConfigureAwait(false);
+                activity?.AddException(ex);
+
+                NuntiumDiagnostics.KafkaPublishFailures.Add(1);
+
+                NuntiumDiagnostics.MessagesFailed.Add(1);
+
+                throw;
+            }
+            finally
+            {
+                var elapsed = Stopwatch.GetElapsedTime(start);
+
+                NuntiumDiagnostics.KafkaPublishDuration.Record(elapsed.TotalMilliseconds);
+
+                NuntiumDiagnostics.PublishDuration.Record(elapsed.TotalMilliseconds);
+            }
         }
 
         public async Task SendAsync(string messageType, string payload, CancellationToken ct)
         {
-            var metadata = _messageTypeRegistry.Get(messageType);
+            using var activity = NuntiumDiagnostics.ActivitySource.StartActivity("nuntium.kafka.transport.send", ActivityKind.Producer);
 
-            var message = new Message<string, string>
+            var start = Stopwatch.GetTimestamp();
+
+            activity?.SetTag("messaging.system", "kafka");
+
+            activity?.SetTag("messaging.operation", "transport");
+
+            activity?.SetTag("messaging.message_type", messageType);
+
+            try
             {
-                Key = Guid.NewGuid().ToString(),
-                Value = payload
-            };
+                var metadata = _messageTypeRegistry.Get(messageType);
 
-            await _producer.ProduceAsync(metadata.Topic, message, ct).ConfigureAwait(false);
+                activity?.SetTag("messaging.destination.name", metadata.Topic);
+
+                var message = new Message<string, string>
+                {
+                    Key = Guid.NewGuid().ToString(),
+                    Value = payload
+                };
+
+                activity?.AddEvent(new ActivityEvent("kafka.transport.producing"));
+
+                await _producer
+                    .ProduceAsync(metadata.Topic, message, ct)
+                    .ConfigureAwait(false);
+
+                activity?.AddEvent(new ActivityEvent("kafka.transport.sent"));
+
+                activity?.SetStatus(ActivityStatusCode.Ok);
+
+                NuntiumDiagnostics.MessagesTransported.Add(1);
+            }
+            catch (Exception ex)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error);
+
+                activity?.AddException(ex);
+
+                NuntiumDiagnostics.KafkaPublishFailures.Add(1);
+
+                NuntiumDiagnostics.MessagesFailed.Add(1);
+
+                throw;
+            }
+            finally
+            {
+                var elapsed = Stopwatch.GetElapsedTime(start);
+
+                NuntiumDiagnostics.TransportDuration.Record(elapsed.TotalMilliseconds);
+
+                NuntiumDiagnostics.KafkaPublishDuration.Record(elapsed.TotalMilliseconds);
+            }
         }
 
         private void Dispose(bool disposing)
@@ -116,6 +218,7 @@ namespace FerrumMalleator.Nuntium.Transport.Kafka
         public void Dispose()
         {
             Dispose(disposing: true);
+
             GC.SuppressFinalize(this);
         }
     }
