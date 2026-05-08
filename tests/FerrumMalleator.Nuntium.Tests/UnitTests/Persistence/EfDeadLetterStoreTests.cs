@@ -1,4 +1,5 @@
 ﻿using FerrumMalleator.Nuntium.Messaging.Models;
+using FerrumMalleator.Nuntium.Outbox;
 using FerrumMalleator.Nuntium.Persistence.EntityFramework;
 using FerrumMalleator.Nuntium.Persistence.EntityFramework.Context;
 using FluentAssertions;
@@ -126,6 +127,31 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Persistence
                 CancellationToken.None);
 
             db.Set<DeadLetterMessage>().Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Should_mark_outbox_message_as_failed()
+        {
+            using var db = CreateDb();
+
+            var store = new EfOutboxStore(db);
+
+            var message = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                Type = "test",
+                Payload = "{}"
+            };
+
+            await store.AddAsync(message, CancellationToken.None);
+
+            await store.MarkFailedAsync(message.Id, "failure", CancellationToken.None);
+
+            var persisted = await db.Set<OutboxMessage>().FindAsync(message.Id);
+
+            persisted.Should().NotBeNull();
+
+            persisted!.Error.Should().Be("failure");
         }
 
         private static DeadLetterMessage CreateValidMessage(Guid? id = null, DateTime? failedAt = null)
