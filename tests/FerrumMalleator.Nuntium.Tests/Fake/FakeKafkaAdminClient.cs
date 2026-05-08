@@ -10,6 +10,7 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
         public bool ThrowAlreadyExists;
         public bool ThrowOtherError;
         public bool CreateTopicsCalled;
+        public bool ThrowGenericError;
 
         public Task CreateTopicsAsync(IEnumerable<TopicSpecification> topics)
         {
@@ -30,7 +31,10 @@ namespace FerrumMalleator.Nuntium.Tests.Fake
                     new() { Error = new Error(ErrorCode.TopicAlreadyExists) }
                 });
             }
-            
+
+            if (ThrowGenericError)
+                throw new Exception("generic failure");
+
             CreatedTopics.AddRange(topics);
             return Task.CompletedTask;
         }

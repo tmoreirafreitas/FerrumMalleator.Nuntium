@@ -226,5 +226,38 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.DLQ
 
             await act.Should().ThrowAsync<Exception>().WithMessage("store failed");
         }
+
+        [Fact]
+        public async Task Should_skip_message_when_retry_time_not_reached()
+        {
+            var services = new ServiceCollection();
+
+            services.AddSingleton<IDeadLetterStore, InMemoryDeadLetterStore>();
+
+            services.AddSingleton<IMessageTransport, FakeTransport>();
+
+            var provider = services.BuildServiceProvider();
+
+            using var scope = provider.CreateScope();
+
+            var store = scope.ServiceProvider.GetRequiredService<IDeadLetterStore>();
+
+            await store.AddAsync(new DeadLetterMessage
+            {
+                MessageId = Guid.NewGuid(),
+                MessageType = "test",
+                PayloadJson = "{}",
+                NextRetryAt = DateTime.UtcNow.AddMinutes(10)
+            },
+                CancellationToken.None);
+
+            var processor = new DeadLetterReprocessor(provider);
+
+            await processor.ProcessOnceAsync(CancellationToken.None);
+
+            var pending = await store.GetPendingAsync(10, CancellationToken.None);
+
+            pending.Should().HaveCount(1);
+        }
     }
 }

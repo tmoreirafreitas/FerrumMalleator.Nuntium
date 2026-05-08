@@ -12,6 +12,23 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
     {
         private record TestMessage;
 
+        //private sealed class TestKafkaTopicProvisioner : KafkaTopicProvisioner
+        //{
+        //    public TestKafkaTopicProvisioner(
+        //        IKafkaAdminClient admin,
+        //        IOptions<KafkaOptions> options,
+        //        MessageMetadataRegistry registry)
+        //        : base(admin, options, registry)
+        //    {
+        //    }
+
+        //    public Task ExecutePublicAsync(
+        //        CancellationToken ct)
+        //    {
+        //        return ExecuteAsync(ct);
+        //    }
+        //}
+
         [Fact]
         public async Task Should_create_topics()
         {
@@ -101,6 +118,27 @@ namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
             await act.Should().NotThrowAsync();
 
             admin.CreateTopicsCalled.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task Should_throw_on_generic_error()
+        {
+            var registry = new MessageMetadataRegistry();
+
+            registry.Register<TestMessage>("topic1", "group");
+
+            var admin = new FakeKafkaAdminClient
+            {
+                ThrowGenericError = true
+            };
+
+            var provisioner = new KafkaTopicProvisioner(admin, Options.Create(new KafkaOptions()), registry);
+
+            var act = async () => await provisioner.ProvisionAsync(CancellationToken.None);
+
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage("generic failure");
         }
     }
 }
