@@ -14,6 +14,7 @@ using FerrumMalleator.Nuntium.Transport.Default;
 using FerrumMalleator.Nuntium.Transport.InMemory;
 using FerrumMalleator.Nuntium.Transport.Kafka;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace FerrumMalleator.Nuntium.Builders
@@ -139,9 +140,13 @@ namespace FerrumMalleator.Nuntium.Builders
             builder.Services.Configure(configure);
 
             builder.Services.AddSingleton<IKafkaProducerFactory, KafkaProducerFactory>();
-            builder.Services.AddSingleton<KafkaPublisher>();
-            builder.Services.AddSingleton<IMessageTransport>(sp => sp.GetRequiredService<KafkaPublisher>());
+
+            builder.Services.AddSingleton<IMessageTransport, KafkaTransport>();
+
+            builder.Services.AddSingleton<IMessagePublisher, KafkaPublisher>();
+
             builder.Services.AddSingleton<IKafkaAdminClient, KafkaAdminClient>();
+
             builder.Services.AddHostedService<KafkaTopicProvisioner>();
 
             return builder;
@@ -161,7 +166,7 @@ namespace FerrumMalleator.Nuntium.Builders
             services.AddSingleton(busBuilder.ConsumerInvokerRegistry);
             services.AddSingleton<ITopicResolver>(new TopicResolver(busBuilder.Registry));
 
-            services.AddScoped(sp =>
+            services.TryAddSingleton<IMessagePublisher>(sp =>
             {
                 var options = busBuilder.MessagingOptions;
 
@@ -170,7 +175,7 @@ namespace FerrumMalleator.Nuntium.Builders
                     return ActivatorUtilities.CreateInstance<OutboxPublisher>(sp);
                 }
 
-                return ActivatorUtilities.CreateInstance<DefaultMessagePublisher>(sp) as IMessagePublisher;                
+                return ActivatorUtilities.CreateInstance<DefaultMessagePublisher>(sp);
             });
 
             if (!services.Any(s => s.ServiceType == typeof(IRetryExecutor)))

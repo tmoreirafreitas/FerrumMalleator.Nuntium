@@ -1,8 +1,7 @@
+﻿using FerrumMalleator.Nuntium.Abstractions.Publishers;
+using Microsoft.Extensions.Hosting;
 
-using FerrumMalleator.Nuntium.Abstractions.Publishers;
-using FerrumMalleator.Nuntium.Samples.Messages;
-
-namespace FerrumMalleator.Nuntium.Samples
+namespace FerrumMalleator.Nuntium.Sample.BasicFlow
 {
     internal sealed class SamplePublisherWorker(IMessagePublisher publisher) : BackgroundService
     {

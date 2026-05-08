@@ -6,6 +6,7 @@
     <Project Path="src/FerrumMalleator.Nuntium.Persistence.EntityFramework/FerrumMalleator.Nuntium.Persistence.EntityFramework.csproj" Id="069941cc-7959-4e52-85c7-c2c8d1094a0e" />
   </Folder>
   <Folder Name="/3-Samples/">
+    <Project Path="samples/FerrumMalleator.Nuntium.Sample.BasicFlow/FerrumMalleator.Nuntium.Sample.BasicFlow.csproj" Id="2f7f3ad9-70d7-4ccb-9eb7-02e008b4b8a3" />
     <Project Path="samples/FerrumMalleator.Nuntium.Samples/FerrumMalleator.Nuntium.Samples.csproj" Id="9e292da1-5e76-4721-b52c-f23c812643d7" />
   </Folder>
   <Folder Name="/4-Tests/">

@@ -1,251 +1,133 @@
-﻿using Confluent.Kafka;
-using FerrumMalleator.Nuntium.Abstractions;
+﻿using FerrumMalleator.Nuntium.Abstractions;
+using FerrumMalleator.Nuntium.Abstractions.Publishers;
 using FerrumMalleator.Nuntium.Builders;
-using FerrumMalleator.Nuntium.Configuration;
-using FerrumMalleator.Nuntium.Dispatching;
-using FerrumMalleator.Nuntium.Messaging.Envelopes;
-using FerrumMalleator.Nuntium.Retry;
-using FerrumMalleator.Nuntium.Transport.InMemory;
 using FerrumMalleator.Nuntium.Transport.Kafka;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Moq;
-using System.Text.Json;
 
 namespace FerrumMalleator.Nuntium.Tests.UnitTests.Transports.Kafka
 {
-    public class KafkaPublesherTests
+    public class KafkaPublisherTests
     {
         private record TestMessage(Guid Id);
 
         [Fact]
-        public async Task Should_publish_message_to_kafka()
+        public async Task Should_publish_message_using_transport()
         {
-            var producer = new Mock<IProducer<string, string>>();
-
-            producer
-                .Setup(x => x.ProduceAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Message<string, string>>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DeliveryResult<string, string>());
-
-            var resolver = new Mock<ITopicResolver>();
-            resolver.Setup(x => x.Resolve<TestMessage>())
-                    .Returns("test-topic");
-
-            var registry = new MessageMetadataRegistry();
-            registry.Register<TestMessage>("test-key", "group");
-
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
-
-            var message = new TestMessage(Guid.NewGuid());
-
-            await publisher.PublishAsync(message);
-
-            producer.Verify(x => x.ProduceAsync(
-                "test-topic",
-                It.Is<Message<string, string>>(m => m.Value.Contains(registry.Get<TestMessage>().Key)),
-                It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task Should_send_raw_message()
-        {
-            var producer = new Mock<IProducer<string, string>>();
-
-            producer
-                .Setup(x => x.ProduceAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Message<string, string>>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DeliveryResult<string, string>());
+            var transport = new Mock<IMessageTransport>();
 
             var resolver = new Mock<ITopicResolver>();
 
-            var registry = new MessageMetadataRegistry();
-            registry.Register<TestMessage>("test-key", "group");
-
-            var factory = new Mock<IKafkaProducerFactory>();
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
-
-            var metadata = registry.Get<TestMessage>();
-
-            var envelope = new MessageEnvelope<TestMessage>
-            {
-                MessageId = Guid.NewGuid(),
-                MessageType = metadata.Key,
-                Payload = new TestMessage(Guid.NewGuid()),
-            };
-
-            var payload = JsonSerializer.Serialize(envelope);
-
-            await publisher.SendAsync(metadata.Key, payload, CancellationToken.None);
-
-            producer.Verify(x => x.ProduceAsync(
-                It.IsAny<string>(),
-                It.Is<Message<string, string>>(m => m.Value == payload),
-                It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task Should_throw_when_producer_fails()
-        {
-            var producer = new Mock<IProducer<string, string>>();
-
-            producer
-                .Setup(x => x.ProduceAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Message<string, string>>(),
-                    It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("kafka error"));
-
-            var resolver = new Mock<ITopicResolver>();
-            resolver.Setup(x => x.Resolve<TestMessage>())
-                    .Returns("test-topic");
-
-            var registry = new MessageMetadataRegistry();
-            registry.Register<TestMessage>("test-key", "group");
-
-            var factory = new Mock<IKafkaProducerFactory>();
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
-
-            var act = () => publisher.PublishAsync(new TestMessage(Guid.NewGuid()));
-
-            await act.Should().ThrowAsync<Exception>();
-        }
-
-        [Fact]
-        public void Should_dispose_producer()
-        {
-            var producer = new Mock<IProducer<string, string>>();
-
-            var publisher = new KafkaPublisher(producer.Object, Mock.Of<ITopicResolver>(), new MessageMetadataRegistry());
-
-            publisher.Dispose();
-
-            producer.Verify(x => x.Flush(It.IsAny<TimeSpan>()), Times.Once);
-            producer.Verify(x => x.Dispose(), Times.Once);
-        }
-
-        [Fact]
-        public void Should_throw_when_producer_creation_fails()
-        {
-            var factory = new Mock<IKafkaProducerFactory>();
-
-            factory.Setup(x => x.Create(It.IsAny<ProducerConfig>()))
-                   .Throws(new Exception("fail"));
-
-            var options = Options.Create(new KafkaOptions
-            {
-                BootstrapServers = "localhost:9092"
-            });
-
-            var resolver = new Mock<ITopicResolver>();
-            var registry = new MessageMetadataRegistry();
-
-            var act = () => new KafkaPublisher(options, resolver.Object, registry, factory.Object);
-
-            act.Should().Throw<InvalidOperationException>()
-               .WithMessage("*Failed to initialize Kafka producer*");
-        }
-
-        [Fact]
-        public async Task Should_use_custom_partition_key()
-        {
-            var producer = new Mock<IProducer<string, string>>();
-
-            producer
-                .Setup(x => x.ProduceAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Message<string, string>>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DeliveryResult<string, string>());
-
-            var resolver = new Mock<ITopicResolver>();
-
-            resolver.Setup(x => x.Resolve<TestMessage>())
+            resolver
+                .Setup(x => x.Resolve<TestMessage>())
                 .Returns("test-topic");
 
             var registry = new MessageMetadataRegistry();
 
-            registry.Register<TestMessage>("test-key", "group", x => ((TestMessage)x).Id.ToString());
+            registry.Register<TestMessage>("test-key", "group");
 
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+            var publisher = new KafkaPublisher(transport.Object, resolver.Object, registry);
 
             var message = new TestMessage(Guid.NewGuid());
-
+            var metadata = registry.Get<TestMessage>();
             await publisher.PublishAsync(message);
 
-            producer.Verify(x =>
-                x.ProduceAsync(
+            transport.Verify(x =>
+                x.SendAsync(
                     "test-topic",
-                    It.Is<Message<string, string>>(m =>
-                        m.Key == message.Id.ToString()),
+                    It.Is<string>(payload =>
+                        payload.Contains(metadata.Key)),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task Should_throw_when_transport_send_fails()
+        public async Task Should_create_valid_envelope()
         {
-            var producer = new Mock<IProducer<string, string>>();
-
-            producer
-                .Setup(x => x.ProduceAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<Message<string, string>>(),
-                    It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("transport failed"));
+            var transport = new Mock<IMessageTransport>();
 
             var resolver = new Mock<ITopicResolver>();
+
+            resolver
+                .Setup(x => x.Resolve<TestMessage>())
+                .Returns("test-topic");
 
             var registry = new MessageMetadataRegistry();
 
             registry.Register<TestMessage>("test-key", "group");
 
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+            var publisher = new KafkaPublisher(transport.Object, resolver.Object, registry);
 
-            var metadata = registry.Get<TestMessage>();
+            var message = new TestMessage(Guid.NewGuid());
 
-            var act = async () => await publisher.SendAsync(metadata.Key, "{}", CancellationToken.None);
+            await publisher.PublishAsync(message);
 
-            await act.Should().ThrowAsync<Exception>().WithMessage("transport failed");
+            transport.Verify(x =>
+                x.SendAsync(
+                    "test-topic",
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [Fact]
-        public async Task Should_throw_when_transport_metadata_not_found()
+        public async Task Should_throw_when_transport_fails()
         {
-            var producer = new Mock<IProducer<string, string>>();
+            var transport = new Mock<IMessageTransport>();
+
+            transport
+                .Setup(x => x.SendAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("transport failed"));
 
             var resolver = new Mock<ITopicResolver>();
 
+            resolver
+                .Setup(x => x.Resolve<TestMessage>())
+                .Returns("test-topic");
+
             var registry = new MessageMetadataRegistry();
 
-            var publisher = new KafkaPublisher(producer.Object, resolver.Object, registry);
+            registry.Register<TestMessage>("test-key", "group");
 
-            var act = async () => await publisher.SendAsync("invalid-message", "{}", CancellationToken.None);
+            var publisher = new KafkaPublisher(transport.Object, resolver.Object, registry);
 
-            await act.Should().ThrowAsync<KeyNotFoundException>();
+            var act = () => publisher.PublishAsync(new TestMessage(Guid.NewGuid()));
+
+            await act.Should()
+                .ThrowAsync<Exception>()
+                .WithMessage("transport failed");
         }
 
         [Fact]
-        public void Should_ignore_multiple_dispose()
+        public async Task Should_resolve_topic_before_sending()
         {
-            var producer = new Mock<IProducer<string, string>>();
+            var transport = new Mock<IMessageTransport>();
 
-            var publisher = new KafkaPublisher(producer.Object, Mock.Of<ITopicResolver>(), new MessageMetadataRegistry());
+            var resolver = new Mock<ITopicResolver>();
 
-            publisher.Dispose();
+            resolver
+                .Setup(x => x.Resolve<TestMessage>())
+                .Returns("pedido-topic");
 
-            publisher.Dispose();
+            var registry = new MessageMetadataRegistry();
 
-            producer.Verify(x => x.Flush(It.IsAny<TimeSpan>()), Times.Once);
+            registry.Register<TestMessage>("pedido-key", "group");
 
-            producer.Verify(x => x.Dispose(), Times.Once);
-        }        
+            var publisher = new KafkaPublisher(transport.Object, resolver.Object, registry);
+
+            await publisher.PublishAsync(new TestMessage(Guid.NewGuid()));
+
+            resolver.Verify(x => x.Resolve<TestMessage>(), Times.Once);
+
+            transport.Verify(x =>
+                x.SendAsync(
+                    "pedido-topic",
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
     }
 }
