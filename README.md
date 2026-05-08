@@ -405,9 +405,94 @@ Se você já usa MediatR, você já sabe usar Nuntium.
 
 ## 🔮 Roadmap
 
-* [ ] Observabilidade completa
-* [ ] Suporte a RabbitMQ
-* [ ] Registro automático de consumers via assembly scanning (opcional)
+O roadmap do Nuntium prioriza:
+
+- simplicidade operacional
+- experiência do desenvolvedor (DX)
+- estabilidade da API pública
+- evolução sustentável do ecossistema
+
+---
+
+### 🚀 v1.1.0 — Developer Experience & Adoption
+
+Foco em reduzir boilerplate e acelerar adoção.
+
+#### Planejado
+
+- [ ] Registro automático de consumers via assembly scanning
+- [ ] Descoberta automática de `IMessageConsumer<T>`
+- [ ] Attribute-based topic mapping
+- [ ] Expansão da documentação oficial
+- [ ] Projetos de exemplo completos
+- [ ] Stack Docker Compose para desenvolvimento local
+
+#### Exemplo esperado
+
+```csharp
+services.AddNuntium(x =>
+{
+    x.ScanConsumersFromAssembly<Program>();
+});
+```
+---
+
+### 🧩 v1.2.0 — Enterprise Messaging Features
+
+Foco em integração enterprise e mensageria distribuída avançada.
+
+#### Planejado
+
+- [ ] Message Headers
+- [ ] Correlation / Causation metadata
+- [ ] Distributed Trace Context propagation
+- [ ] Retry policies por mensagem/consumer
+- [ ] Delayed / Scheduled messages
+- [ ] Estratégias avançadas de DLQ e poison messages
+
+---
+
+### 🚚 v1.3.0 — Transport Extensibility
+
+Foco em expansão do ecossistema de transportes.
+
+#### Planejado
+
+- [ ] `FerrumMalleator.Nuntium.Transport.RabbitMq`
+- [ ] Possível suporte futuro a ActiveMq e Azure Service Bus
+
+> O Nuntium permanece Kafka-native no core principal.
+
+---
+
+### 🏗️ v2.0.0 — Broker-Agnostic Architecture (Possibilidade futura)
+
+Avaliação futura baseada na maturidade do ecossistema e necessidade real de desacoplamento completo de transportes.
+
+#### Possibilidades
+
+- [ ] Core totalmente broker-agnostic
+- [ ] Kafka desacoplado do core
+- [ ] Pipeline de transporte unificado
+- [ ] Estratégias avançadas de particionamento
+- [ ] Orquestração distribuída avançada
+
+> Esta seção representa possibilidades arquiteturais futuras, não um compromisso de implementação.
+
+---
+
+### 🧠 Filosofia de evolução
+
+O objetivo do Nuntium não é crescer rapidamente em quantidade de features.
+
+O foco principal permanece:
+
+```text
+simplicidade
+clareza
+baixo acoplamento
+produtividade
+```
 
 ---
 
