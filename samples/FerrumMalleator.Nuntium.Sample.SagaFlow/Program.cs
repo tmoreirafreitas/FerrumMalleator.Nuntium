@@ -1,6 +1,11 @@
 ﻿using Confluent.Kafka;
 using FerrumMalleator.Nuntium.Builders;
-using FerrumMalleator.Nuntium.Sample.BasicFlow;
+using FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders;
+using FerrumMalleator.Nuntium.Sample.SagaFlow.Consumers;
+using FerrumMalleator.Nuntium.Sample.SagaFlow.Messages;
+using FerrumMalleator.Nuntium.Sample.SagaFlow.Persistence;
+using FerrumMalleator.Nuntium.Sample.SagaFlow.Workers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Metrics;
@@ -49,14 +54,31 @@ try
                     cc.AutoOffsetReset = AutoOffsetReset.Earliest;
                     cc.EnableAutoCommit = true;
                 });
+            })
+            .UseRetry(cf =>
+            {
+                cf.MaxAttempts = 4;
+                cf.Delays = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(40)];
             });
 
-            bus.AddConsumer<PedidoConsumer, PedidoCriado>()
-               .WithTopic<PedidoCriado>("pedido-criado", "basic-flow");
+            bus.AddSaga()
+                .WithTopic<PedidoCriado>("pedido-criado", "saga-flow")
+                .WithTopic<AprovarPagamento>("aprovar-pagamento", "saga-flow")
+                .WithTopic<PagamentoAprovado>("pagamento-aprovado", "saga-flow")
+                .WithTopic<SepararEstoque>("separar-estoque", "saga-flow")
+                .WithTopic<EstoqueFinalizado>("estoque-finalizado", "saga-flow");
+
+            bus.AddConsumer<PedidoConsumer, AprovarPagamento>()
+               .AddConsumer<PedidoConsumer, SepararEstoque>();
+
+            bus.UseEfCorePersistence<SagaFlowDbContext>(opt =>
+            {
+                opt.UseInMemoryDatabase("SagaFlowDb");
+            });
         });
 
         services.AddHostedService<SamplePublisherWorker>();
-    });    
+    });
 
     var host = builder.Build();
 
@@ -64,7 +86,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "BasicFlow foi encerrado inesperadamente.");
+    Log.Fatal(ex, "SagaFlow foi encerrado inesperadamente.");
 }
 finally
 {

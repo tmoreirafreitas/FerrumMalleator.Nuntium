@@ -34,7 +34,7 @@ builder.Services.AddNuntium(bus =>
         cf.MaxAttempts = 4;
         cf.Delays = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(40)];
     })
-    .UseOutbox()
+    //.UseOutbox()
     .AddSaga()
     .AddConsumer<PedidoConsumer, PedidoCriado>()
     .WithTopic<Pedido>("pedido", "pedido-group")
