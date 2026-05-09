@@ -35,7 +35,7 @@ try
         {
             bus.UseKafka(options =>
             {
-                options.BootstrapServers = "localhost:9092";
+                options.BootstrapServers = "localhost:29092";
 
                 options.ConfigureProducer(cp =>
                 {

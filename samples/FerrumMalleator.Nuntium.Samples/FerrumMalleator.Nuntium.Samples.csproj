@@ -6,6 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>dotnet-FerrumMalleator.Nuntium.Samples-bfdd7a25-8ce4-4b29-87b6-29fa8b9bf0cb</UserSecretsId>
 		<SonarQubeExclude>true</SonarQubeExclude>
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>
