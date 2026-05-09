@@ -1,6 +1,11 @@
 ﻿using Confluent.Kafka;
 using FerrumMalleator.Nuntium.Builders;
-using FerrumMalleator.Nuntium.Sample.BasicFlow;
+using FerrumMalleator.Nuntium.Persistence.EntityFramework.Builders;
+using FerrumMalleator.Nuntium.Sample.OutboxFlow.Consumers;
+using FerrumMalleator.Nuntium.Sample.OutboxFlow.Messages;
+using FerrumMalleator.Nuntium.Sample.OutboxFlow.Persistence;
+using FerrumMalleator.Nuntium.Sample.OutboxFlow.Workers;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Metrics;
@@ -20,7 +25,7 @@ try
             .AddOpenTelemetry()
             .ConfigureResource(resource =>
             {
-                resource.AddService("Nuntium.Sample.BasicFlow");
+                resource.AddService("Nuntium.Sample.OutboxFlow");
             })
             .WithTracing(tracing =>
             {
@@ -56,12 +61,20 @@ try
                 });
             });
 
-            bus.AddConsumer<PedidoConsumer, PedidoCriado>()
-               .WithTopic<PedidoCriado>("pedido-criado", "basic-flow");
+            bus.UseOutbox();
+
+            bus.AddConsumer<PedidoConsumer, PedidoCriado>();
+            
+            bus.WithTopic<PedidoCriado>("pedido-criado", "outbox-flow");
+
+            bus.UseEfCorePersistence<OutboxFlowDbContext>(options =>
+            {
+                options.UseInMemoryDatabase("nuntium-outbox");
+            });
         });
 
         services.AddHostedService<SamplePublisherWorker>();
-    });    
+    });
 
     var host = builder.Build();
 
@@ -69,7 +82,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "BasicFlow foi encerrado inesperadamente.");
+    Log.Fatal(ex, "OutboxFlow foi encerrado inesperadamente.");
 }
 finally
 {

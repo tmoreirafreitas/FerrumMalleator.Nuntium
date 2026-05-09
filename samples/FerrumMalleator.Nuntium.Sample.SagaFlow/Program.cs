@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 
@@ -22,6 +23,10 @@ try
     {
         services
             .AddOpenTelemetry()
+            .ConfigureResource(resource =>
+            {
+                resource.AddService("Nuntium.Sample.SagaFlow");
+            })
             .WithTracing(tracing =>
             {
                 tracing

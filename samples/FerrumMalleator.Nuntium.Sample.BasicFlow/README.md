@@ -40,28 +40,31 @@ incluindo:
 
 # 🐳 Subindo infraestrutura
 
-O sample utiliza Docker Compose para subir:
-
-- Kafka
-- Zookeeper
-- Kafka UI
-
-Execute:
+Na pasta `samples/` execute:
 
 ```bash
 docker compose up -d
 ```
 
-Kafka ficará disponível em:
+A infraestrutura iniciará:
+
+- Kafka
+- Kafka UI
+
+---
+
+# 🔌 Endpoints
+
+Kafka:
 
 ```text
-localhost:9092
+localhost:29092
 ```
 
 Kafka UI:
 
 ```text
-http://localhost:8080
+http://localhost:8082
 ```
 
 ---

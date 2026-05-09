@@ -72,18 +72,22 @@ Pedido Finalizado
 
 # 🐳 Subindo infraestrutura
 
-O sample utiliza Docker Compose para subir:
-
-- Kafka
-- Kafka UI
-
-Execute:
+Na pasta `samples/` execute:
 
 ```bash
 docker compose up -d
 ```
 
-Kafka ficará disponível em:
+A infraestrutura iniciará:
+
+- Kafka
+- Kafka UI
+
+---
+
+# 🔌 Endpoints
+
+Kafka:
 
 ```text
 localhost:29092
