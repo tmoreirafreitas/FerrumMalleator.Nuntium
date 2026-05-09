@@ -15,13 +15,6 @@ Ele nasce de uma ideia simples:
 
 ---
 
-## ⚠️ Status do Projeto
-
-> 🚧 **Versão 0.x (Early Release)**
-> A arquitetura principal está estável, mas a API pode evoluir com base no feedback da comunidade antes da versão 1.0.0.
-
----
-
 ## ✨ Por que o Nuntium existe?
 
 Frameworks de mensageria atuais são poderosos —
@@ -85,22 +78,46 @@ builder.Services.AddNuntium(bus =>
     bus.UseKafka(opt =>
     {
         opt.BootstrapServers = "localhost:9092";
-    })
-    .UseInMemory()
-    .UseOutbox()
-    .UseRetry(r =>
-    {
-        r.MaxAttempts = 3;
-    })
-    .AddSaga()
-    .WithTopic<PedidoCriado>("pedido.criado", "pedido-group")
-    .AddConsumer<PedidoCriadoConsumer, PedidoCriado>();
+    });
+
+    bus.ScanConsumersFromAssembly<Program>();
 });
 ```
 
 ---
 
-### 2. Publicando mensagens
+### 2. Mapeamento de tópico
+
+```csharp
+using FerrumMalleator.Nuntium.Attributes;
+
+[Topic("pedido.criado", "pedido-group")]
+public sealed record PedidoCriado(Guid Id);
+```
+
+---
+
+### 3. Consumindo mensagens
+
+```csharp
+public sealed class PedidoCriadoConsumer
+    : IMessageConsumer<PedidoCriado>
+{
+    public Task ConsumeAsync(
+        PedidoCriado message,
+        CancellationToken ct)
+    {
+        Console.WriteLine(
+            $"Pedido recebido: {message.Id}");
+
+        return Task.CompletedTask;
+    }
+}
+```
+
+---
+
+### 4. Publicando mensagens
 
 ```csharp
 public class PedidoService(IMessagePublisher publisher)
@@ -116,37 +133,57 @@ public class PedidoService(IMessagePublisher publisher)
 
 ---
 
-### 3. Consumindo mensagens
+### 5. Configuração explícita (opcional)
+
+O Nuntium também permite configuração totalmente explícita utilizando a API fluente tradicional.
 
 ```csharp
-public class PedidoCriadoConsumer : IMessageConsumer<PedidoCriado>
+builder.Services.AddNuntium(bus =>
 {
-    public Task ConsumeAsync(PedidoCriado message, CancellationToken ct)
+    bus.UseKafka(opt =>
     {
-        Console.WriteLine($"Pedido recebido: {message.Id}");
-        return Task.CompletedTask;
-    }
-}
+        opt.BootstrapServers = "localhost:9092";
+    });
+
+    bus.WithTopic<PedidoCriado>(
+        "pedido.criado",
+        "pedido-group");
+
+    bus.AddConsumer<
+        PedidoCriadoConsumer,
+        PedidoCriado>();
+});
 ```
+
+Essa abordagem oferece:
+
+- controle explícito de tópicos
+- configuração centralizada
+- ausência de attributes
+- maior previsibilidade arquitetural
 
 ---
 
 ## 📦 Samples
 
-O projeto possui exemplos práticos no projeto:
+O Nuntium inclui samples oficiais demonstrando os principais cenários do framework.
 
-`FerrumMalleator.Nuntium.Samples`
+| Sample | Descrição |
+|---|---|
+| [BasicFlow](./samples/FerrumMalleator.Nuntium.Sample.BasicFlow/README.md) | Producer + Consumer + Kafka + Observabilidade |
+| [SagaFlow](./samples/FerrumMalleator.Nuntium.Sample.SagaFlow/README.md) | Saga orchestration + Workflow distribuído |
+| [OutboxFlow](./samples/FerrumMalleator.Nuntium.Sample.OutboxFlow/README.md) | Outbox Pattern + Eventual consistency |
 
-Os samples demonstram cenários comuns de mensageria:
+Os samples demonstram:
 
-* Producer / Consumer
-* Retry e DLQ
-* Outbox Pattern
-* Saga
-* Transporte e persistência InMemory
-* Integração com Entity Framework
-
-O objetivo é permitir entendimento rápido da arquitetura e facilitar a adoção do framework.
+- Kafka real
+- OpenTelemetry-compatible instrumentation
+- Distributed tracing
+- Metrics
+- Saga orchestration
+- Outbox Pattern
+- Eventual consistency
+- Entity Framework Core InMemory
 
 ---
 
@@ -367,9 +404,9 @@ Customização quando necessário
 
 ---
 
-## ✨ Observabilidade nativa
+## ✨ Instrumentação OpenTelemetry-compatible
 
-O Nuntium agora possui suporte nativo a OpenTelemetry:
+O Nuntium agora possui instrumentação compatível com OpenTelemetry:
 
 - Distributed tracing
 - Metrics
@@ -389,6 +426,23 @@ Compatível com:
 - OTLP exporters  
 
 > O destino dos dados (Prometheus, Jaeger, Elastic, etc.) é definido pela aplicação.
+
+---
+
+## ⚠️ Registro de mensagens
+
+Cada tipo de mensagem deve ser registrado apenas uma vez utilizando:
+
+- `WithTopic<T>()`
+- `TopicAttribute`
+
+O Nuntium utiliza um registro único de metadata por mensagem para:
+
+- resolução de tópicos
+- serialização
+- roteamento
+- observabilidade
+- particionamento
 
 ---
 
@@ -414,28 +468,16 @@ O roadmap do Nuntium prioriza:
 
 ---
 
-### 🚀 v1.1.0 — Developer Experience & Adoption
+### ✅ v1.1.0 — Developer Experience & Adoption
 
-Foco em reduzir boilerplate e acelerar adoção.
+Entregue:
 
-#### Planejado
-
-- [ ] Registro automático de consumers via assembly scanning
-- [ ] Descoberta automática de `IMessageConsumer<T>`
-- [ ] Attribute-based topic mapping
-- [ ] Expansão da documentação oficial
-- [ ] Projetos de exemplo completos
-- [ ] Stack Docker Compose para desenvolvimento local
-
-#### Exemplo esperado
-
-```csharp
-services.AddNuntium(x =>
-{
-    x.ScanConsumersFromAssembly<Program>();
-});
-```
----
+- [x] Registro automático de consumers via assembly scanning
+- [x] Descoberta automática de `IMessageConsumer<T>`
+- [x] Attribute-based topic mapping
+- [x] Expansão da documentação oficial
+- [x] Projetos de exemplo completos
+- [x] Stack Docker Compose para desenvolvimento local
 
 ### 🧩 v1.2.0 — Enterprise Messaging Features
 
@@ -514,6 +556,7 @@ Outras soluções planejadas:
 
 Contribuições são bem-vindas!
 
+Abra uma issue ou pull request.
 Abra uma issue ou pull request.
 
 ---

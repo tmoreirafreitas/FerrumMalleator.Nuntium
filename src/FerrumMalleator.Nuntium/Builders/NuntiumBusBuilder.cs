@@ -27,8 +27,7 @@ namespace FerrumMalleator.Nuntium.Builders
         /// Consumers are responsible for handling incoming messages.
         /// Multiple consumers can be registered for different message types.
         /// </remarks>
-        public NuntiumBusBuilder AddConsumer<TConsumer, TMessage>()
-            where TConsumer : class, IMessageConsumer<TMessage>
+        public NuntiumBusBuilder AddConsumer<TConsumer, TMessage>() where TConsumer : class, IMessageConsumer<TMessage>
         {
             Consumers.Add((typeof(TConsumer), typeof(IMessageConsumer<TMessage>)));
             ConsumerInvokerRegistry.Register<TMessage>();
@@ -49,7 +48,12 @@ namespace FerrumMalleator.Nuntium.Builders
         public NuntiumBusBuilder WithTopic<TMessage>(string topic, string groupId, Func<TMessage, string>? partitionKey = null)
         {
             Registry.Register<TMessage>(topic, groupId, partitionKey is null ? null : msg => partitionKey((TMessage)msg));
+            return this;
+        }
 
+        public NuntiumBusBuilder ScanConsumersFromAssembly<T>()
+        {
+            ConsumerAssemblyScanner.Scan(this, typeof(T).Assembly);
             return this;
         }
     }
