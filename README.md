@@ -557,7 +557,6 @@ Outras soluções planejadas:
 Contribuições são bem-vindas!
 
 Abra uma issue ou pull request.
-Abra uma issue ou pull request.
 
 ---
 
