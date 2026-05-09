@@ -21,29 +21,66 @@ jobs:
       - name: Extract version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Restore
-        run: dotnet restore
+      # =========================
+      # Restore
+      # =========================
 
-      - name: Build
-        run: dotnet build -c Release --no-restore
+      - name: Restore Nuntium
+        run: |
+          dotnet restore src/FerrumMalleator.Nuntium/FerrumMalleator.Nuntium.csproj
 
-      - name: Pack
-        run: dotnet pack -c Release --no-build -p:Version=$VERSION
+      - name: Restore EF Package
+        run: |
+          dotnet restore src/FerrumMalleator.Nuntium.Persistence.EntityFramework/FerrumMalleator.Nuntium.Persistence.EntityFramework.csproj
+
+      # =========================
+      # Build
+      # =========================
+
+      - name: Build Nuntium
+        run: |
+          dotnet build src/FerrumMalleator.Nuntium/FerrumMalleator.Nuntium.csproj \
+            -c Release \
+            --no-restore
+
+      - name: Build EF Package
+        run: |
+          dotnet build src/FerrumMalleator.Nuntium.Persistence.EntityFramework/FerrumMalleator.Nuntium.Persistence.EntityFramework.csproj \
+            -c Release \
+            --no-restore
+
+      # =========================
+      # Pack
+      # =========================
+
+      - name: Pack Nuntium
+        run: |
+          dotnet pack src/FerrumMalleator.Nuntium/FerrumMalleator.Nuntium.csproj \
+            -c Release \
+            --no-build \
+            -p:Version=$VERSION
+
+      - name: Pack EF Package
+        run: |
+          dotnet pack src/FerrumMalleator.Nuntium.Persistence.EntityFramework/FerrumMalleator.Nuntium.Persistence.EntityFramework.csproj \
+            -c Release \
+            --no-build \
+            -p:Version=$VERSION
+
+      # =========================
+      # Publish
+      # =========================
 
       - name: Publish core package
         run: |
-          dotnet nuget push "**/FerrumMalleator.Nuntium.*.nupkg" \
+          dotnet nuget push "src/**/FerrumMalleator.Nuntium.$VERSION.nupkg" \
             --skip-duplicate \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --source https://api.nuget.org/v3/index.json
 
-      - name: Publish EF package (retry)
+      - name: Publish EF package
         run: |
-          for i in {1..5}; do
-            dotnet nuget push "**/FerrumMalleator.Nuntium.Persistence.EntityFramework.*.nupkg" \
-              --skip-duplicate \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
-              --source https://api.nuget.org/v3/index.json && break
-            echo "Retrying in 10s..."
-            sleep 10
-          done
+          dotnet nuget push "src/**/FerrumMalleator.Nuntium.Persistence.EntityFramework.$VERSION.nupkg" \
+            --skip-duplicate \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json
